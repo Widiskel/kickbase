@@ -512,7 +512,11 @@ func GetMatchReport(db *gorm.DB) gin.HandlerFunc {
 
 		report, err := reportSvc.GetMatchReport(id)
 		if err != nil {
-			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Match not found", nil)
+			if err.Error() == "match not found" {
+				RespondError(c, http.StatusNotFound, "NOT_FOUND", "Match not found", nil)
+			} else {
+				RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to get report", nil)
+			}
 			return
 		}
 
