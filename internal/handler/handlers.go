@@ -5,6 +5,8 @@ import (
 	"strconv"
 
 	"kickbase/internal/domain"
+	"kickbase/internal/repository"
+	"kickbase/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -478,25 +480,42 @@ func ListMatchReports(db *gorm.DB) gin.HandlerFunc {
 		if page < 1 { page = 1 }
 		if limit < 1 { limit = 10 }
 
-		var matches []domain.Match
-		var total int64
+		// Create service
+		matchRepo := repository.NewMatchRepository(db)
+		resultRepo := repository.NewResultRepository(db)
+		goalRepo := repository.NewGoalRepository(db)
+		teamRepo := repository.NewTeamRepository(db)
+		playerRepo := repository.NewPlayerRepository(db)
+		reportSvc := service.NewReportService(db, matchRepo, resultRepo, goalRepo, teamRepo, playerRepo)
 
-		db.Model(&domain.Match{}).Count(&total)
-		db.Offset((page - 1) * limit).Limit(limit).Find(&matches)
+		reports, total, err := reportSvc.ListMatchReports(page, limit)
+		if err != nil {
+			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list reports", nil)
+			return
+		}
 
-		RespondPaginated(c, matches, total, page, limit)
+		RespondPaginated(c, reports, total, page, limit)
 	}
 }
 
 func GetMatchReport(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		var match domain.Match
-		if err := db.First(&match, "id = ?", id).Error; err != nil {
+
+		// Create service
+		matchRepo := repository.NewMatchRepository(db)
+		resultRepo := repository.NewResultRepository(db)
+		goalRepo := repository.NewGoalRepository(db)
+		teamRepo := repository.NewTeamRepository(db)
+		playerRepo := repository.NewPlayerRepository(db)
+		reportSvc := service.NewReportService(db, matchRepo, resultRepo, goalRepo, teamRepo, playerRepo)
+
+		report, err := reportSvc.GetMatchReport(id)
+		if err != nil {
 			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Match not found", nil)
 			return
 		}
 
-		RespondSuccess(c, match, "")
+		RespondSuccess(c, report, "")
 	}
 }
