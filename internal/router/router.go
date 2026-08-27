@@ -15,6 +15,13 @@ func Setup(db *gorm.DB) *gin.Engine {
 	r.Use(middleware.CORS())
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.Logger())
+	r.Use(middleware.PrometheusMetrics())
+
+	// Metrics endpoint (outside /api group)
+	r.GET("/metrics", func(c *gin.Context) {
+		c.Header("Content-Type", "text/plain; charset=utf-8")
+		c.String(200, middleware.GetMetrics())
+	})
 
 	// API routes
 	api := r.Group("/api")

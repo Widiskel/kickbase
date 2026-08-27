@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"kickbase/internal/domain"
 	"kickbase/internal/repository"
@@ -159,6 +160,80 @@ func (s *PlayerService) DeletePlayer(id string) error {
 
 func (s *PlayerService) GetPlayerHistory(playerID string) ([]domain.PlayerHistory, error) {
 	return s.playerRepo.GetHistory(playerID)
+}
+
+func (s *PlayerService) RevertPlayer(playerID string, targetVersion int) error {
+	// Get current player
+	player, err := s.playerRepo.FindByID(playerID)
+	if err != nil {
+		// Try to find in soft-deleted records
+		player, err = s.playerRepo.FindByIDIncludingDeleted(playerID)
+		if err != nil {
+			return errors.New("player not found")
+		}
+	}
+
+	// Get target version from history
+	history, err := s.playerRepo.GetHistoryByVersion(playerID, targetVersion)
+	if err != nil {
+		return errors.New("target version not found in history")
+	}
+
+	// Parse the changes from history
+	var changes map[string]interface{}
+	if err := json.Unmarshal([]byte(history.Changes), &changes); err != nil {
+		return fmt.Errorf("failed to parse history changes: %w", err)
+	}
+
+	// Apply changes to player
+	if v, ok := changes["name"]; ok {
+		player.Name = v.(string)
+	}
+	if v, ok := changes["height"]; ok {
+		player.Height = v.(float64)
+	}
+	if v, ok := changes["weight"]; ok {
+		player.Weight = v.(float64)
+	}
+	if v, ok := changes["position"]; ok {
+		player.Position = v.(string)
+	}
+	if v, ok := changes["playstyle"]; ok {
+		if v == nil {
+			player.Playstyle = nil
+		} else {
+			s := v.(string)
+			player.Playstyle = &s
+		}
+	}
+	if v, ok := changes["jersey_number"]; ok {
+		player.JerseyNumber = int(v.(float64))
+	}
+
+	// Restore if deleted
+	if player.DeletedAt.Valid {
+		player.DeletedAt.Time = time.Time{}
+		player.DeletedAt.Valid = false
+	}
+
+	player.Version = player.Version + 1
+	if err := s.playerRepo.Update(player); err != nil {
+		return fmt.Errorf("failed to revert player: %w", err)
+	}
+
+	// Record revert in history
+	revertChanges := map[string]interface{}{
+		"reverted_to_version": targetVersion,
+	}
+	revertJSON, _ := json.Marshal(revertChanges)
+	revertHistory := &domain.PlayerHistory{
+		PlayerID: player.ID,
+		Version:  player.Version,
+		Changes:  string(revertJSON),
+	}
+	s.playerRepo.CreateHistory(revertHistory)
+
+	return nil
 }
 
 func isValidPosition(position string) bool {

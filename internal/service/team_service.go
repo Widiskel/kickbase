@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"kickbase/internal/domain"
 	"kickbase/internal/repository"
@@ -133,4 +134,70 @@ func (s *TeamService) DeleteTeam(id string) error {
 
 func (s *TeamService) GetTeamHistory(teamID string) ([]domain.TeamHistory, error) {
 	return s.teamRepo.GetHistory(teamID)
+}
+
+func (s *TeamService) RevertTeam(teamID string, targetVersion int) error {
+	// Get current team
+	team, err := s.teamRepo.FindByID(teamID)
+	if err != nil {
+		// Try to find in soft-deleted records
+		team, err = s.teamRepo.FindByIDIncludingDeleted(teamID)
+		if err != nil {
+			return errors.New("team not found")
+		}
+	}
+
+	// Get target version from history
+	history, err := s.teamRepo.GetHistoryByVersion(teamID, targetVersion)
+	if err != nil {
+		return errors.New("target version not found in history")
+	}
+
+	// Parse the changes from history
+	var changes map[string]interface{}
+	if err := json.Unmarshal([]byte(history.Changes), &changes); err != nil {
+		return fmt.Errorf("failed to parse history changes: %w", err)
+	}
+
+	// Apply changes to team
+	if v, ok := changes["name"]; ok {
+		team.Name = v.(string)
+	}
+	if v, ok := changes["logo_url"]; ok {
+		team.LogoURL = v.(string)
+	}
+	if v, ok := changes["founded_year"]; ok {
+		team.FoundedYear = int(v.(float64))
+	}
+	if v, ok := changes["address"]; ok {
+		team.Address = v.(string)
+	}
+	if v, ok := changes["city"]; ok {
+		team.City = v.(string)
+	}
+
+	// Restore if deleted
+	if team.DeletedAt.Valid {
+		team.DeletedAt.Time = time.Time{}
+		team.DeletedAt.Valid = false
+	}
+
+	team.Version = team.Version + 1
+	if err := s.teamRepo.Update(team); err != nil {
+		return fmt.Errorf("failed to revert team: %w", err)
+	}
+
+	// Record revert in history
+	revertChanges := map[string]interface{}{
+		"reverted_to_version": targetVersion,
+	}
+	revertJSON, _ := json.Marshal(revertChanges)
+	revertHistory := &domain.TeamHistory{
+		TeamID:  team.ID,
+		Version: team.Version,
+		Changes: string(revertJSON),
+	}
+	s.teamRepo.CreateHistory(revertHistory)
+
+	return nil
 }

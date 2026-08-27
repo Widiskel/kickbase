@@ -53,3 +53,11 @@ func (r *MatchRepository) GetHistory(matchID string) ([]domain.MatchHistory, err
 	err := r.db.Where("match_id = ?", matchID).Order("version DESC").Find(&history).Error
 	return history, err
 }
+
+func (r *MatchRepository) GetHistoryByVersion(matchID string, version int) (*domain.MatchHistory, error) {
+	var history domain.MatchHistory
+	if err := r.db.Where("match_id = ? AND version = ?", matchID, version).First(&history).Error; err != nil {
+		return nil, err
+	}
+	return &history, nil
+}

@@ -1,6 +1,7 @@
 package service_test
 
 import (
+	"strings"
 	"testing"
 
 	"kickbase/internal/domain"
@@ -141,13 +142,9 @@ func TestResultService_CreateResult_DuplicateResult(t *testing.T) {
 	assert.Error(t, err)
 	// Either "already exists" or "not in scheduled status" is acceptable
 	assert.True(t,
-		contains(err.Error(), "already exists") || contains(err.Error(), "not in scheduled status"),
+		strings.Contains(err.Error(), "already exists") || strings.Contains(err.Error(), "not in scheduled status"),
 		"Expected error about duplicate or status, got: %s", err.Error(),
 	)
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && (s[0:len(substr)] == substr || contains(s[1:], substr)))
 }
 
 func TestResultService_CreateResult_PlayerFromWrongTeam(t *testing.T) {

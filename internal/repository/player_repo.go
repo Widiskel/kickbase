@@ -69,3 +69,19 @@ func (r *PlayerRepository) GetHistory(playerID string) ([]domain.PlayerHistory, 
 	err := r.db.Where("player_id = ?", playerID).Order("version DESC").Find(&history).Error
 	return history, err
 }
+
+func (r *PlayerRepository) FindByIDIncludingDeleted(id string) (*domain.Player, error) {
+	var player domain.Player
+	if err := r.db.Unscoped().First(&player, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &player, nil
+}
+
+func (r *PlayerRepository) GetHistoryByVersion(playerID string, version int) (*domain.PlayerHistory, error) {
+	var history domain.PlayerHistory
+	if err := r.db.Where("player_id = ? AND version = ?", playerID, version).First(&history).Error; err != nil {
+		return nil, err
+	}
+	return &history, nil
+}

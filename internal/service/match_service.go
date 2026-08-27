@@ -108,9 +108,66 @@ func (s *MatchService) GetMatchHistory(matchID string) ([]domain.MatchHistory, e
 	return s.matchRepo.GetHistory(matchID)
 }
 
+func (s *MatchService) RevertMatch(matchID string, targetVersion int) error {
+	// Get current match
+	match, err := s.matchRepo.FindByID(matchID)
+	if err != nil {
+		return errors.New("match not found")
+	}
+
+	// Get target version from history
+	history, err := s.matchRepo.GetHistoryByVersion(matchID, targetVersion)
+	if err != nil {
+		return errors.New("target version not found in history")
+	}
+
+	// Parse the changes from history
+	var changes map[string]interface{}
+	if err := json.Unmarshal([]byte(history.Changes), &changes); err != nil {
+		return fmt.Errorf("failed to parse history changes: %w", err)
+	}
+
+	// Apply changes to match
+	if v, ok := changes["match_date"]; ok {
+		match.MatchDate = v.(string)
+	}
+	if v, ok := changes["match_time"]; ok {
+		match.MatchTime = v.(string)
+	}
+	if v, ok := changes["home_team_id"]; ok {
+		match.HomeTeamID = v.(string)
+	}
+	if v, ok := changes["away_team_id"]; ok {
+		match.AwayTeamID = v.(string)
+	}
+	if v, ok := changes["status"]; ok {
+		match.Status = v.(string)
+	}
+
+	match.Version = match.Version + 1
+	if err := s.matchRepo.Update(match); err != nil {
+		return fmt.Errorf("failed to revert match: %w", err)
+	}
+
+	// Record revert in history
+	revertChanges := map[string]interface{}{
+		"reverted_to_version": targetVersion,
+	}
+	revertJSON, _ := json.Marshal(revertChanges)
+	revertHistory := &domain.MatchHistory{
+		MatchID: match.ID,
+		Version: match.Version,
+		Changes: string(revertJSON),
+	}
+	s.matchRepo.CreateHistory(revertHistory)
+
+	return nil
+}
+
 func isValidStatusTransition(from, to string) bool {
 	validTransitions := map[string][]string{
-		"scheduled": {"completed", "cancelled"},
+		"scheduled": {"completed", "cancelled", "deferred"},
+		"deferred":  {"scheduled", "cancelled"},
 		"completed": {},
 		"cancelled": {},
 	}

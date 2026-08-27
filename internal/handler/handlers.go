@@ -124,7 +124,29 @@ func GetTeamHistory(db *gorm.DB) gin.HandlerFunc {
 
 func RevertTeam(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		RespondError(c, http.StatusNotImplemented, "NOT_IMPLEMENTED", "Revert not yet implemented", nil)
+		id := c.Param("id")
+
+		var input struct {
+			TargetVersion int `json:"target_version"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+			return
+		}
+
+		teamRepo := repository.NewTeamRepository(db)
+		svc := service.NewTeamService(teamRepo)
+
+		if err := svc.RevertTeam(id, input.TargetVersion); err != nil {
+			if err.Error() == "team not found" || err.Error() == "target version not found in history" {
+				RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
+			} else {
+				RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to revert team", nil)
+			}
+			return
+		}
+
+		RespondSuccess(c, nil, "Team reverted successfully")
 	}
 }
 
@@ -274,7 +296,30 @@ func GetPlayerHistory(db *gorm.DB) gin.HandlerFunc {
 
 func RevertPlayer(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		RespondError(c, http.StatusNotImplemented, "NOT_IMPLEMENTED", "Revert not yet implemented", nil)
+		id := c.Param("id")
+
+		var input struct {
+			TargetVersion int `json:"target_version"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+			return
+		}
+
+		playerRepo := repository.NewPlayerRepository(db)
+		teamRepo := repository.NewTeamRepository(db)
+		svc := service.NewPlayerService(playerRepo, teamRepo)
+
+		if err := svc.RevertPlayer(id, input.TargetVersion); err != nil {
+			if err.Error() == "player not found" || err.Error() == "target version not found in history" {
+				RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
+			} else {
+				RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to revert player", nil)
+			}
+			return
+		}
+
+		RespondSuccess(c, nil, "Player reverted successfully")
 	}
 }
 
@@ -372,7 +417,30 @@ func GetMatchHistory(db *gorm.DB) gin.HandlerFunc {
 
 func RevertMatch(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		RespondError(c, http.StatusNotImplemented, "NOT_IMPLEMENTED", "Revert not yet implemented", nil)
+		id := c.Param("id")
+
+		var input struct {
+			TargetVersion int `json:"target_version"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+			return
+		}
+
+		matchRepo := repository.NewMatchRepository(db)
+		teamRepo := repository.NewTeamRepository(db)
+		svc := service.NewMatchService(matchRepo, teamRepo)
+
+		if err := svc.RevertMatch(id, input.TargetVersion); err != nil {
+			if err.Error() == "match not found" || err.Error() == "target version not found in history" {
+				RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
+			} else {
+				RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to revert match", nil)
+			}
+			return
+		}
+
+		RespondSuccess(c, nil, "Match reverted successfully")
 	}
 }
 

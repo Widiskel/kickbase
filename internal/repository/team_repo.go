@@ -67,3 +67,19 @@ func (r *TeamRepository) GetHistory(teamID string) ([]domain.TeamHistory, error)
 	err := r.db.Where("team_id = ?", teamID).Order("version DESC").Find(&history).Error
 	return history, err
 }
+
+func (r *TeamRepository) FindByIDIncludingDeleted(id string) (*domain.Team, error) {
+	var team domain.Team
+	if err := r.db.Unscoped().First(&team, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &team, nil
+}
+
+func (r *TeamRepository) GetHistoryByVersion(teamID string, version int) (*domain.TeamHistory, error) {
+	var history domain.TeamHistory
+	if err := r.db.Where("team_id = ? AND version = ?", teamID, version).First(&history).Error; err != nil {
+		return nil, err
+	}
+	return &history, nil
+}
