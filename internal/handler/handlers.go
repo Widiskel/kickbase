@@ -13,6 +13,18 @@ import (
 )
 
 // Team handlers
+
+// CreateTeam godoc
+// @Summary Create a new team
+// @Description Create a new football team with the provided details
+// @Tags Teams
+// @Accept json
+// @Produce json
+// @Param team body domain.Team true "Team data"
+// @Success 201 {object} SuccessResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Router /api/teams [post]
 func CreateTeam(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var team domain.Team
@@ -28,6 +40,15 @@ func CreateTeam(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// ListTeams godoc
+// @Summary List all teams
+// @Description Get a paginated list of all non-deleted teams
+// @Tags Teams
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} PaginatedResponse
+// @Router /api/teams [get]
 func ListTeams(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -45,6 +66,15 @@ func ListTeams(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// GetTeam godoc
+// @Summary Get a team by ID
+// @Description Get a single team by its ID
+// @Tags Teams
+// @Produce json
+// @Param id path string true "Team ID"
+// @Success 200 {object} SuccessResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /api/teams/{id} [get]
 func GetTeam(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -57,6 +87,19 @@ func GetTeam(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// UpdateTeam godoc
+// @Summary Update a team
+// @Description Update an existing team's information
+// @Tags Teams
+// @Accept json
+// @Produce json
+// @Param id path string true "Team ID"
+// @Param team body domain.Team true "Team data with version"
+// @Success 200 {object} SuccessResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Router /api/teams/{id} [put]
 func UpdateTeam(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -91,6 +134,16 @@ func UpdateTeam(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// DeleteTeam godoc
+// @Summary Delete a team
+// @Description Soft delete a team (only if no active players)
+// @Tags Teams
+// @Produce json
+// @Param id path string true "Team ID"
+// @Success 204 "No Content"
+// @Failure 404 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Router /api/teams/{id} [delete]
 func DeleteTeam(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -150,12 +203,33 @@ func RevertTeam(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// Player handlers
+// CreatePlayer godoc
+// @Summary Create a new player
+// @Description Add a new player to a team
+// @Tags Players
+// @Accept json
+// @Produce json
+// @Param player body domain.Player true "Player data"
+// @Success 201 {object} SuccessResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Router /api/players [post]
 func CreatePlayer(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var player domain.Player
 		if err := c.ShouldBindJSON(&player); err != nil {
 			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+			return
+		}
+
+		// Validate position
+		validPositions := map[string]bool{
+			"CF": true, "SS": true, "LWF": true, "RWF": true,
+			"AMF": true, "CMF": true, "DMF": true, "LMF": true, "RMF": true,
+			"CB": true, "LB": true, "RB": true, "GK": true,
+		}
+		if !validPositions[player.Position] {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid position. Valid positions: CF, SS, LWF, RWF, AMF, CMF, DMF, LMF, RMF, CB, LB, RB, GK", nil)
 			return
 		}
 
@@ -323,7 +397,16 @@ func RevertPlayer(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// Match handlers
+// CreateMatch godoc
+// @Summary Schedule a new match
+// @Description Create a match schedule between two teams
+// @Tags Matches
+// @Accept json
+// @Produce json
+// @Param match body domain.Match true "Match data"
+// @Success 201 {object} SuccessResponse
+// @Failure 400 {object} ErrorResponse
+// @Router /api/matches [post]
 func CreateMatch(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var match domain.Match
@@ -444,7 +527,18 @@ func RevertMatch(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// Match Result handlers
+// CreateMatchResult godoc
+// @Summary Report match result
+// @Description Report the result of a completed match with goals
+// @Tags Results
+// @Accept json
+// @Produce json
+// @Param result body object true "Match result with goals"
+// @Success 201 {object} SuccessResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Router /api/results [post]
 func CreateMatchResult(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input struct {
@@ -540,7 +634,15 @@ func GetMatchResult(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// Report handlers
+// ListMatchReports godoc
+// @Summary List all match reports
+// @Description Get a paginated list of all match reports with scores and status
+// @Tags Reports
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} PaginatedResponse
+// @Router /api/reports/matches [get]
 func ListMatchReports(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -566,6 +668,15 @@ func ListMatchReports(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// GetMatchReport godoc
+// @Summary Get a single match report
+// @Description Get detailed report for a specific match including score, status, top scorer, and cumulative wins
+// @Tags Reports
+// @Produce json
+// @Param id path string true "Match ID"
+// @Success 200 {object} SuccessResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /api/reports/matches/{id} [get]
 func GetMatchReport(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")

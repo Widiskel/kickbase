@@ -5,6 +5,8 @@ import (
 	"kickbase/internal/middleware"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +24,9 @@ func Setup(db *gorm.DB) *gin.Engine {
 		c.Header("Content-Type", "text/plain; charset=utf-8")
 		c.String(200, middleware.GetMetrics())
 	})
+
+	// Swagger documentation
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API routes
 	api := r.Group("/api")

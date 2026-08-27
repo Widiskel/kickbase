@@ -9,6 +9,14 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// @title Kickbase Football Team Management API
+// @version 1.0
+// @description REST API for managing amateur football teams, players, matches, and reports for Perusahaan XYZ.
+// @host localhost:8080
+// @BasePath /
+// @schemes http
+// @produce json
+// @consumes json
 func main() {
 	// Load config
 	cfg := config.Load()

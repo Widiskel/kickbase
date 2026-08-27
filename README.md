@@ -2,7 +2,7 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/yourusername/kickbase/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/kickbase/actions/workflows/ci.yml)
+[![CI](https://github.com/widiskel/kickbase/actions/workflows/ci.yml/badge.svg)](https://github.com/widiskel/kickbase/actions/workflows/ci.yml)
 
 A REST API backend for managing amateur football teams, players, match schedules, match results, and match reports for Perusahaan XYZ.
 

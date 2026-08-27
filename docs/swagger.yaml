@@ -1,0 +1,405 @@
+basePath: /
+definitions:
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  internal_handler.ErrorDetail:
+    properties:
+      code:
+        type: string
+      details: {}
+      message:
+        type: string
+    type: object
+  internal_handler.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/internal_handler.ErrorDetail'
+      success:
+        type: boolean
+    type: object
+  internal_handler.PaginatedResponse:
+    properties:
+      data: {}
+      limit:
+        type: integer
+      page:
+        type: integer
+      success:
+        type: boolean
+      total:
+        type: integer
+    type: object
+  internal_handler.SuccessResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  kickbase_internal_domain.Match:
+    properties:
+      away_team_id:
+        type: string
+      created_at:
+        type: string
+      home_team_id:
+        type: string
+      id:
+        type: string
+      match_date:
+        type: string
+      match_time:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+  kickbase_internal_domain.Player:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      height:
+        type: number
+      id:
+        type: string
+      jersey_number:
+        type: integer
+      name:
+        type: string
+      playstyle:
+        type: string
+      position:
+        type: string
+      team_id:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+      weight:
+        type: number
+    type: object
+  kickbase_internal_domain.Team:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      founded_year:
+        type: integer
+      id:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: REST API for managing amateur football teams, players, matches, and
+    reports for Perusahaan XYZ.
+  title: Kickbase Football Team Management API
+  version: "1.0"
+paths:
+  /api/matches:
+    post:
+      consumes:
+      - application/json
+      description: Create a match schedule between two teams
+      parameters:
+      - description: Match data
+        in: body
+        name: match
+        required: true
+        schema:
+          $ref: '#/definitions/kickbase_internal_domain.Match'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Schedule a new match
+      tags:
+      - Matches
+  /api/players:
+    post:
+      consumes:
+      - application/json
+      description: Add a new player to a team
+      parameters:
+      - description: Player data
+        in: body
+        name: player
+        required: true
+        schema:
+          $ref: '#/definitions/kickbase_internal_domain.Player'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Create a new player
+      tags:
+      - Players
+  /api/reports/matches:
+    get:
+      description: Get a paginated list of all match reports with scores and status
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.PaginatedResponse'
+      summary: List all match reports
+      tags:
+      - Reports
+  /api/reports/matches/{id}:
+    get:
+      description: Get detailed report for a specific match including score, status,
+        top scorer, and cumulative wins
+      parameters:
+      - description: Match ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Get a single match report
+      tags:
+      - Reports
+  /api/results:
+    post:
+      consumes:
+      - application/json
+      description: Report the result of a completed match with goals
+      parameters:
+      - description: Match result with goals
+        in: body
+        name: result
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Report match result
+      tags:
+      - Results
+  /api/teams:
+    get:
+      description: Get a paginated list of all non-deleted teams
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.PaginatedResponse'
+      summary: List all teams
+      tags:
+      - Teams
+    post:
+      consumes:
+      - application/json
+      description: Create a new football team with the provided details
+      parameters:
+      - description: Team data
+        in: body
+        name: team
+        required: true
+        schema:
+          $ref: '#/definitions/kickbase_internal_domain.Team'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Create a new team
+      tags:
+      - Teams
+  /api/teams/{id}:
+    delete:
+      description: Soft delete a team (only if no active players)
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Delete a team
+      tags:
+      - Teams
+    get:
+      description: Get a single team by its ID
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Get a team by ID
+      tags:
+      - Teams
+    put:
+      consumes:
+      - application/json
+      description: Update an existing team's information
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Team data with version
+        in: body
+        name: team
+        required: true
+        schema:
+          $ref: '#/definitions/kickbase_internal_domain.Team'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Update a team
+      tags:
+      - Teams
+produces:
+- application/json
+schemes:
+- http
+swagger: "2.0"
