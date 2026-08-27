@@ -6,15 +6,15 @@ import (
 	"fmt"
 
 	"kickbase/internal/domain"
-	"kickbase/internal/repository"
+	"kickbase/internal/interfaces"
 )
 
 type MatchService struct {
-	matchRepo *repository.MatchRepository
-	teamRepo  *repository.TeamRepository
+	matchRepo interfaces.MatchRepository
+	teamRepo  interfaces.TeamRepository
 }
 
-func NewMatchService(matchRepo *repository.MatchRepository, teamRepo *repository.TeamRepository) *MatchService {
+func NewMatchService(matchRepo interfaces.MatchRepository, teamRepo interfaces.TeamRepository) *MatchService {
 	return &MatchService{
 		matchRepo: matchRepo,
 		teamRepo:  teamRepo,

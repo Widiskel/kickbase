@@ -5,27 +5,27 @@ import (
 	"fmt"
 
 	"kickbase/internal/domain"
-	"kickbase/internal/repository"
+	"kickbase/internal/interfaces"
 
 	"gorm.io/gorm"
 )
 
 type ReportService struct {
 	db         *gorm.DB
-	matchRepo  *repository.MatchRepository
-	resultRepo *repository.ResultRepository
-	goalRepo   *repository.GoalRepository
-	teamRepo   *repository.TeamRepository
-	playerRepo *repository.PlayerRepository
+	matchRepo  interfaces.MatchRepository
+	resultRepo interfaces.ResultRepository
+	goalRepo   interfaces.GoalRepository
+	teamRepo   interfaces.TeamRepository
+	playerRepo interfaces.PlayerRepository
 }
 
 func NewReportService(
 	db *gorm.DB,
-	matchRepo *repository.MatchRepository,
-	resultRepo *repository.ResultRepository,
-	goalRepo *repository.GoalRepository,
-	teamRepo *repository.TeamRepository,
-	playerRepo *repository.PlayerRepository,
+	matchRepo interfaces.MatchRepository,
+	resultRepo interfaces.ResultRepository,
+	goalRepo interfaces.GoalRepository,
+	teamRepo interfaces.TeamRepository,
+	playerRepo interfaces.PlayerRepository,
 ) *ReportService {
 	return &ReportService{
 		db:         db,

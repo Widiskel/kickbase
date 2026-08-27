@@ -6,24 +6,24 @@ import (
 	"fmt"
 
 	"kickbase/internal/domain"
-	"kickbase/internal/repository"
+	"kickbase/internal/interfaces"
 
 	"gorm.io/gorm"
 )
 
 type ResultService struct {
-	resultRepo *repository.ResultRepository
-	matchRepo  *repository.MatchRepository
-	goalRepo   *repository.GoalRepository
-	playerRepo *repository.PlayerRepository
+	resultRepo interfaces.ResultRepository
+	matchRepo  interfaces.MatchRepository
+	goalRepo   interfaces.GoalRepository
+	playerRepo interfaces.PlayerRepository
 	db         *gorm.DB
 }
 
 func NewResultService(
-	resultRepo *repository.ResultRepository,
-	matchRepo *repository.MatchRepository,
-	goalRepo *repository.GoalRepository,
-	playerRepo *repository.PlayerRepository,
+	resultRepo interfaces.ResultRepository,
+	matchRepo interfaces.MatchRepository,
+	goalRepo interfaces.GoalRepository,
+	playerRepo interfaces.PlayerRepository,
 	db *gorm.DB,
 ) *ResultService {
 	return &ResultService{

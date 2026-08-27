@@ -7,15 +7,15 @@ import (
 	"time"
 
 	"kickbase/internal/domain"
-	"kickbase/internal/repository"
+	"kickbase/internal/interfaces"
 )
 
 type PlayerService struct {
-	playerRepo *repository.PlayerRepository
-	teamRepo   *repository.TeamRepository
+	playerRepo interfaces.PlayerRepository
+	teamRepo   interfaces.TeamRepository
 }
 
-func NewPlayerService(playerRepo *repository.PlayerRepository, teamRepo *repository.TeamRepository) *PlayerService {
+func NewPlayerService(playerRepo interfaces.PlayerRepository, teamRepo interfaces.TeamRepository) *PlayerService {
 	return &PlayerService{
 		playerRepo: playerRepo,
 		teamRepo:   teamRepo,
