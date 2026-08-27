@@ -1,0 +1,32 @@
+# Spec Kit artifacts
+.specify/
+.hermes/
+.docs/
+specs/
+
+# Go
+*.exe
+*.test
+*.out
+vendor/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+pgdata/
+
+# Coverage
+coverage.out
+coverage.html

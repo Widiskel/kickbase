@@ -1,0 +1,502 @@
+package handler
+
+import (
+	"net/http"
+	"strconv"
+
+	"kickbase/internal/domain"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
+
+// Team handlers
+func CreateTeam(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var team domain.Team
+		if err := c.ShouldBindJSON(&team); err != nil {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+			return
+		}
+		if err := db.Create(&team).Error; err != nil {
+			RespondError(c, http.StatusConflict, "CONFLICT", "Team name already exists", nil)
+			return
+		}
+		RespondCreated(c, team)
+	}
+}
+
+func ListTeams(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+		if page < 1 { page = 1 }
+		if limit < 1 { limit = 10 }
+
+		var teams []domain.Team
+		var total int64
+
+		db.Model(&domain.Team{}).Count(&total)
+		db.Offset((page - 1) * limit).Limit(limit).Find(&teams)
+
+		RespondPaginated(c, teams, total, page, limit)
+	}
+}
+
+func GetTeam(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var team domain.Team
+		if err := db.First(&team, "id = ?", id).Error; err != nil {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Team not found", nil)
+			return
+		}
+		RespondSuccess(c, team, "")
+	}
+}
+
+func UpdateTeam(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var team domain.Team
+		if err := db.First(&team, "id = ?", id).Error; err != nil {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Team not found", nil)
+			return
+		}
+
+		var input domain.Team
+		if err := c.ShouldBindJSON(&input); err != nil {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+			return
+		}
+
+		if input.Version != team.Version {
+			RespondError(c, http.StatusConflict, "CONFLICT", "Version mismatch", nil)
+			return
+		}
+
+		updates := map[string]interface{}{
+			"name":         input.Name,
+			"logo_url":     input.LogoURL,
+			"founded_year": input.FoundedYear,
+			"address":      input.Address,
+			"city":         input.City,
+			"version":      team.Version + 1,
+		}
+
+		db.Model(&team).Updates(updates)
+		RespondSuccess(c, team, "Team updated successfully")
+	}
+}
+
+func DeleteTeam(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var team domain.Team
+		if err := db.First(&team, "id = ?", id).Error; err != nil {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Team not found", nil)
+			return
+		}
+
+		// Check if team has active players
+		var playerCount int64
+		db.Model(&domain.Player{}).Where("team_id = ?", id).Count(&playerCount)
+		if playerCount > 0 {
+			RespondError(c, http.StatusConflict, "CONFLICT", "Cannot delete team with active players", nil)
+			return
+		}
+
+		db.Delete(&team)
+		RespondNoContent(c)
+	}
+}
+
+func GetTeamHistory(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var history []domain.TeamHistory
+		db.Where("team_id = ?", id).Order("version").Find(&history)
+		RespondSuccess(c, history, "")
+	}
+}
+
+func RevertTeam(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		RespondError(c, http.StatusNotImplemented, "NOT_IMPLEMENTED", "Revert not yet implemented", nil)
+	}
+}
+
+// Player handlers
+func CreatePlayer(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var player domain.Player
+		if err := c.ShouldBindJSON(&player); err != nil {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+			return
+		}
+
+		// Check jersey uniqueness
+		var count int64
+		db.Model(&domain.Player{}).Where("team_id = ? AND jersey_number = ?", player.TeamID, player.JerseyNumber).Count(&count)
+		if count > 0 {
+			RespondError(c, http.StatusConflict, "CONFLICT", "Jersey number already exists in this team", nil)
+			return
+		}
+
+		if err := db.Create(&player).Error; err != nil {
+			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create player", nil)
+			return
+		}
+		RespondCreated(c, player)
+	}
+}
+
+func ListPlayersByTeam(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		teamID := c.Param("teamId")
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+		if page < 1 { page = 1 }
+		if limit < 1 { limit = 10 }
+
+		var players []domain.Player
+		var total int64
+
+		db.Model(&domain.Player{}).Where("team_id = ?", teamID).Count(&total)
+		db.Where("team_id = ?", teamID).Offset((page - 1) * limit).Limit(limit).Find(&players)
+
+		RespondPaginated(c, players, total, page, limit)
+	}
+}
+
+func ListPlayers(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		teamID := c.Query("team_id")
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+		if page < 1 { page = 1 }
+		if limit < 1 { limit = 10 }
+
+		var players []domain.Player
+		var total int64
+
+		query := db.Model(&domain.Player{})
+		if teamID != "" {
+			query = query.Where("team_id = ?", teamID)
+		}
+
+		query.Count(&total)
+		query.Offset((page - 1) * limit).Limit(limit).Find(&players)
+
+		RespondPaginated(c, players, total, page, limit)
+	}
+}
+
+func GetPlayer(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var player domain.Player
+		if err := db.First(&player, "id = ?", id).Error; err != nil {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Player not found", nil)
+			return
+		}
+		RespondSuccess(c, player, "")
+	}
+}
+
+func UpdatePlayer(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var player domain.Player
+		if err := db.First(&player, "id = ?", id).Error; err != nil {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Player not found", nil)
+			return
+		}
+
+		var input domain.Player
+		if err := c.ShouldBindJSON(&input); err != nil {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+			return
+		}
+
+		if input.Version != player.Version {
+			RespondError(c, http.StatusConflict, "CONFLICT", "Version mismatch", nil)
+			return
+		}
+
+		updates := map[string]interface{}{
+			"name":          input.Name,
+			"height":        input.Height,
+			"weight":        input.Weight,
+			"position":      input.Position,
+			"playstyle":     input.Playstyle,
+			"jersey_number": input.JerseyNumber,
+			"version":       player.Version + 1,
+		}
+
+		db.Model(&player).Updates(updates)
+		RespondSuccess(c, player, "Player updated successfully")
+	}
+}
+
+func DeletePlayer(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var player domain.Player
+		if err := db.First(&player, "id = ?", id).Error; err != nil {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Player not found", nil)
+			return
+		}
+
+		// Check if player has goal records
+		var goalCount int64
+		db.Model(&domain.Goal{}).Where("player_id = ?", id).Count(&goalCount)
+		if goalCount > 0 {
+			RespondError(c, http.StatusConflict, "CONFLICT", "Cannot delete player with goal records", nil)
+			return
+		}
+
+		db.Delete(&player)
+		RespondNoContent(c)
+	}
+}
+
+func GetPlayerHistory(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var history []domain.PlayerHistory
+		db.Where("player_id = ?", id).Order("version").Find(&history)
+		RespondSuccess(c, history, "")
+	}
+}
+
+func RevertPlayer(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		RespondError(c, http.StatusNotImplemented, "NOT_IMPLEMENTED", "Revert not yet implemented", nil)
+	}
+}
+
+// Match handlers
+func CreateMatch(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var match domain.Match
+		if err := c.ShouldBindJSON(&match); err != nil {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+			return
+		}
+
+		if match.HomeTeamID == match.AwayTeamID {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Home team and away team must be different", nil)
+			return
+		}
+
+		match.Status = "scheduled"
+		if err := db.Create(&match).Error; err != nil {
+			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create match", nil)
+			return
+		}
+		RespondCreated(c, match)
+	}
+}
+
+func ListMatches(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+		if page < 1 { page = 1 }
+		if limit < 1 { limit = 10 }
+
+		var matches []domain.Match
+		var total int64
+
+		db.Model(&domain.Match{}).Count(&total)
+		db.Offset((page - 1) * limit).Limit(limit).Find(&matches)
+
+		RespondPaginated(c, matches, total, page, limit)
+	}
+}
+
+func GetMatch(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var match domain.Match
+		if err := db.First(&match, "id = ?", id).Error; err != nil {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Match not found", nil)
+			return
+		}
+		RespondSuccess(c, match, "")
+	}
+}
+
+func UpdateMatchStatus(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var match domain.Match
+		if err := db.First(&match, "id = ?", id).Error; err != nil {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Match not found", nil)
+			return
+		}
+
+		var input struct {
+			Status  string `json:"status"`
+			Version int    `json:"version"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+			return
+		}
+
+		if input.Version != match.Version {
+			RespondError(c, http.StatusConflict, "CONFLICT", "Version mismatch", nil)
+			return
+		}
+
+		db.Model(&match).Updates(map[string]interface{}{
+			"status":  input.Status,
+			"version": match.Version + 1,
+		})
+		RespondSuccess(c, match, "Match status updated")
+	}
+}
+
+func GetMatchHistory(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var history []domain.MatchHistory
+		db.Where("match_id = ?", id).Order("version").Find(&history)
+		RespondSuccess(c, history, "")
+	}
+}
+
+func RevertMatch(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		RespondError(c, http.StatusNotImplemented, "NOT_IMPLEMENTED", "Revert not yet implemented", nil)
+	}
+}
+
+// Match Result handlers
+func CreateMatchResult(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var input struct {
+			MatchID   string `json:"match_id"`
+			HomeScore int    `json:"home_score"`
+			AwayScore int    `json:"away_score"`
+			Goals     []struct {
+				PlayerID string `json:"player_id"`
+				GoalTime string `json:"goal_time"`
+			} `json:"goals"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+			return
+		}
+
+		// Check match exists and is scheduled
+		var match domain.Match
+		if err := db.First(&match, "id = ?", input.MatchID).Error; err != nil {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Match not found", nil)
+			return
+		}
+
+		if match.Status != "scheduled" {
+			RespondError(c, http.StatusConflict, "CONFLICT", "Match is not in scheduled status", nil)
+			return
+		}
+
+		// Check no existing result
+		var count int64
+		db.Model(&domain.MatchResult{}).Where("match_id = ?", input.MatchID).Count(&count)
+		if count > 0 {
+			RespondError(c, http.StatusConflict, "CONFLICT", "Match result already exists", nil)
+			return
+		}
+
+		// Create result in transaction
+		tx := db.Begin()
+		result := domain.MatchResult{
+			MatchID:   input.MatchID,
+			HomeScore: input.HomeScore,
+			AwayScore: input.AwayScore,
+		}
+		if err := tx.Create(&result).Error; err != nil {
+			tx.Rollback()
+			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create result", nil)
+			return
+		}
+
+		// Create goals
+		for _, g := range input.Goals {
+			goal := domain.Goal{
+				MatchResultID: result.ID,
+				PlayerID:      g.PlayerID,
+				GoalTime:      g.GoalTime,
+			}
+			if err := tx.Create(&goal).Error; err != nil {
+				tx.Rollback()
+				RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create goal", nil)
+				return
+			}
+		}
+
+		// Update match status to completed
+		tx.Model(&match).Updates(map[string]interface{}{
+			"status":  "completed",
+			"version": match.Version + 1,
+		})
+
+		tx.Commit()
+		RespondCreated(c, result)
+	}
+}
+
+func GetMatchResult(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		matchID := c.Query("match_id")
+		if matchID == "" {
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "match_id query parameter is required", nil)
+			return
+		}
+
+		var result domain.MatchResult
+		if err := db.Where("match_id = ?", matchID).First(&result).Error; err != nil {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Match result not found", nil)
+			return
+		}
+
+		var goals []domain.Goal
+		db.Where("match_result_id = ?", result.ID).Find(&goals)
+
+		RespondSuccess(c, gin.H{"result": result, "goals": goals}, "")
+	}
+}
+
+// Report handlers
+func ListMatchReports(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+		if page < 1 { page = 1 }
+		if limit < 1 { limit = 10 }
+
+		var matches []domain.Match
+		var total int64
+
+		db.Model(&domain.Match{}).Count(&total)
+		db.Offset((page - 1) * limit).Limit(limit).Find(&matches)
+
+		RespondPaginated(c, matches, total, page, limit)
+	}
+}
+
+func GetMatchReport(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var match domain.Match
+		if err := db.First(&match, "id = ?", id).Error; err != nil {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Match not found", nil)
+			return
+		}
+
+		RespondSuccess(c, match, "")
+	}
+}
