@@ -21,48 +21,93 @@ A production-grade RESTful API backend for managing amateur football teams, play
 
 ---
 
-## 🚀 Quick Start — One-Command Setup
+## 💻 System Prerequisites by OS
 
-### Option A: Docker / Podman Compose (Recommended)
-
-Menjalankan seluruh 4 container sekaligus (**Kickbase API**, **PostgreSQL 16**, **Prometheus**, **Grafana**):
-
-```bash
-# 1. Clone repository
-git clone <repository-url>
-cd kickbase
-
-# 2. Start full stack
-docker compose up --build -d
-# Atau jika menggunakan Podman:
-podman compose up --build -d
-```
-
-> 💡 **Khusus Pengguna Podman di Windows**: Jika mengakses dari browser Windows, jalankan helper berikut untuk mensinkronkan port container ke `localhost`:
-> ```powershell
-> powershell -ExecutionPolicy Bypass -File ./scripts/sync-portproxy.ps1
-> ```
+| Operating System | Recommended Tools | Minimum Requirements |
+|---|---|---|
+| **Windows 10/11** | Docker Desktop / Podman Desktop (WSL2) | Go 1.22+, WSL2, Git |
+| **macOS (Intel/Apple Silicon)** | Docker Desktop / Colima / Podman (`brew install podman podman-compose`) | Go 1.22+ (`brew install go`), Git |
+| **Linux (Ubuntu/Debian/RHEL)** | Docker CE (`docker-compose-plugin`) / Podman (`podman-compose`) | Go 1.22+, PostgreSQL 16, Git |
 
 ---
 
-### Option B: Local Setup (Native Go + PostgreSQL)
+## 🚀 Quick Start — Containerized Setup (Recommended)
+
+Satu perintah untuk menjalankan seluruh 4 container sekaligus (**Kickbase API**, **PostgreSQL 16**, **Prometheus**, **Grafana**):
+
+### 1. Menggunakan Docker Compose (Linux / macOS / Windows)
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd kickbase
+
+# Build and start all 4 services in background
+docker compose up --build -d
+
+# Stop all services (dan hapus volume data jika ingin reset bersih)
+docker compose down -v
+```
+
+---
+
+### 2. Menggunakan Podman Compose (Linux / macOS / Windows)
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd kickbase
+
+# Build and start all 4 services in background
+podman compose up --build -d
+
+# Khusus Pengguna Podman di Windows:
+# Jika port container belum otomatis ter-route ke localhost Windows, jalankan helper ini:
+powershell -ExecutionPolicy Bypass -File ./scripts/sync-portproxy.ps1
+
+# Stop all services
+podman compose down -v
+```
+
+---
+
+### 3. Menggunakan Colima (Khusus macOS)
+
+```bash
+# Start colima engine
+colima start --cpu 2 --memory 4
+
+# Run compose
+docker compose up --build -d
+```
+
+---
+
+## 🛠️ Quick Start — Native Local Development (Non-Container)
+
+Jika reviewer ingin menjalankan backend secara langsung di mesin lokal tanpa Docker/Podman:
 
 ```bash
 # 1. Clone repository
 git clone <repository-url>
 cd kickbase
 
-# 2. Setup Environment
+# 2. Setup Environment Variable
 cp .env.example .env
 
-# 3. Create PostgreSQL Database
+# 3. Buat Database PostgreSQL lokal
+# (Pastikan PostgreSQL 14+ aktif di port 5432)
 psql -U postgres -c "CREATE DATABASE kickbase;"
 
-# 4. Install Dependencies & Generate Swagger Docs
+# 4. (Opsional) Jalankan Migrasi DDL SQL manual
+psql -U postgres -d kickbase -f migrations/000001_init_schema.up.sql
+
+# 5. Install Dependencies & Generate Swagger Documentation
 go mod tidy
 swag init -g cmd/server/main.go -o docs
 
-# 5. Run Server (Auto-migrates & seeds initial data)
+# 6. Jalankan Server API
+# (Server otomatis melakukan auto-migration & auto-seeding data 44 pemain)
 go run cmd/server/main.go
 ```
 
@@ -163,6 +208,7 @@ Sistem Kickbase mengimplementasikan standar observabilitas enterprise tiga pilar
 ### 1. Structured JSON Logging & Request Tracing
 - **Library**: `github.com/rs/zerolog`
 - **Request Tracing**: Setiap request yang masuk secara otomatis diberi UUID unik melalui middleware dan diteruskan di header `X-Request-ID`.
+- **Level Differentiation**: `INFO` untuk 2xx/3xx, `WARN` untuk 4xx (client errors), dan `ERROR` untuk 5xx (server faults).
 - **Log Payload Format**:
   ```json
   {
@@ -174,7 +220,7 @@ Sistem Kickbase mengimplementasikan standar observabilitas enterprise tiga pilar
     "latency": 49.16,
     "client_ip": "192.0.2.1",
     "time": "2026-08-28T10:32:53+07:00",
-    "message": "request completed"
+    "message": "request processed"
   }
   ```
 
@@ -184,14 +230,19 @@ Sistem Kickbase mengimplementasikan standar observabilitas enterprise tiga pilar
   - `http_requests_total{method, path, status}` (Counter) — Menghitung total incoming request per endpoint dan status code.
   - `http_request_duration_seconds{method, path}` (Histogram) — Mengukur distribusi latensi request (p50, p90, p99).
 - **Live Dynamic Business Gauges** (Terkoneksi real-time ke Database):
-  - `kickbase_teams_total` / `teams_total` — Jumlah tim aktif saat ini.
-  - `kickbase_players_total` / `players_total` — Jumlah pemain aktif di seluruh klub.
-  - `kickbase_matches_total` / `matches_total` — Total seluruh jadwal pertandingan.
-  - `kickbase_matches_completed_total` — Total pertandingan yang telah selesai dengan laporan hasil.
+  - `teams_total` — Jumlah tim aktif saat ini.
+  - `players_total` — Jumlah pemain aktif di seluruh klub (44 pemain).
+  - `matches_total` — Total seluruh jadwal pertandingan.
+  - `matches_completed_total` — Total pertandingan yang telah selesai dengan laporan hasil.
 
 ### 3. Grafana Pre-Configured Dashboards
-- **URL**: [http://localhost:3000](http://localhost:3000) (Login: `admin` / `admin`).
-- **Provisioning Otomatis**: Datasource Prometheus (`http://prometheus:9090`) dan dashboard Kickbase di-load otomatis saat container pertama kali menyala tanpa perlu setup manual.
+- **URL**: [http://localhost:3000](http://localhost:3000) (Login default: `admin` / `admin`, atau Anonymous Admin enabled).
+- **Dashboard**: `Kickbase API - Executive Production Dashboard` (Pre-provisioned otomatis):
+  - 🟢 **Row 1**: Application Health (`HEALTHY (UP)`), Service Uptime, RAM/Heap Usage (MiB), Active Goroutines, CPU Core Utilization Rate.
+  - 🚨 **Row 2**: Error Tracking Breakdown (Total 4xx, Total 5xx, Overall Failure Rate %, Top Failing Endpoints Trace Table).
+  - ⚽ **Row 3**: Football Domain Metrics (Teams, Players, Matches, Completed).
+  - 🚀 **Row 4**: HTTP Traffic & Latency percentiles.
+  - 📊 **Row 5**: Runtime Resource Trends (Heap allocations over time, Goroutines growth).
 
 ---
 
