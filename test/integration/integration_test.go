@@ -335,3 +335,62 @@ func TestIntegration_HealthCheck(t *testing.T) {
 	assert.True(t, resp["success"].(bool))
 	assert.Equal(t, "Service is healthy", resp["message"])
 }
+
+func TestIntegration_FilteringAndSorting(t *testing.T) {
+	r, db := setupIntegrationRouter(t)
+	token, _ := getTokenForUser(t, r, "admin_filter", "password123", "Admin Filter", "admin")
+
+	// Create two teams
+	body1 := `{"name":"Persija Jakarta","founded_year":1928,"address":"Senayan","city":"Jakarta"}`
+	body2 := `{"name":"Persib Bandung","founded_year":1933,"address":"Gedebage","city":"Bandung"}`
+	
+	req1 := httptest.NewRequest("POST", "/api/teams", bytes.NewBufferString(body1))
+	req1.Header.Set("Content-Type", "application/json")
+	req1.Header.Set("Authorization", "Bearer "+token)
+	w1 := httptest.NewRecorder()
+	r.ServeHTTP(w1, req1)
+	assert.Equal(t, http.StatusCreated, w1.Code)
+
+	req2 := httptest.NewRequest("POST", "/api/teams", bytes.NewBufferString(body2))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("Authorization", "Bearer "+token)
+	w2 := httptest.NewRecorder()
+	r.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusCreated, w2.Code)
+
+	// Filter by city: Jakarta
+	req := httptest.NewRequest("GET", "/api/teams?city=Jakarta", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(1), resp["total"])
+
+	// Sort by founded_year desc (Persib 1933 should be first)
+	req = httptest.NewRequest("GET", "/api/teams?sort_by=founded_year&order=desc", nil)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	items := resp["data"].([]interface{})
+	assert.Equal(t, "Persib Bandung", items[0].(map[string]interface{})["name"])
+
+	_ = db
+}
+
+func TestIntegration_LivePrometheusMetrics(t *testing.T) {
+	r, _ := setupIntegrationRouter(t)
+
+	// Scrape /metrics
+	req := httptest.NewRequest("GET", "/metrics", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	bodyStr := w.Body.String()
+	assert.Contains(t, bodyStr, "http_requests_total")
+	assert.Contains(t, bodyStr, "teams_total")
+	assert.Contains(t, bodyStr, "players_total")
+	assert.Contains(t, bodyStr, "matches_total")
+}

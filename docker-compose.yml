@@ -1,8 +1,8 @@
 services:
-  # PostgreSQL - OPTIONAL: Use this if you don't have PostgreSQL installed locally
-  # To use local PostgreSQL, comment out this service and set DB_HOST=localhost in .env
   postgres:
     image: postgres:16-alpine
+    container_name: kickbase-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: kickbase
       POSTGRES_USER: postgres
@@ -16,40 +16,48 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    profiles:
-      - with-db
+    networks:
+      - kickbase-network
 
   app:
     build: .
+    container_name: kickbase-app
+    restart: unless-stopped
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
-        required: false
     environment:
-      DB_HOST: ${DB_HOST:-localhost}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      DB_NAME: ${DB_NAME:-kickbase}
-      DB_SSLMODE: ${DB_SSLMODE:-disable}
-      SERVER_PORT: ${SERVER_PORT:-8080}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: kickbase
+      DB_SSLMODE: disable
+      SERVER_PORT: 8080
+      LOG_LEVEL: info
+      JWT_SECRET: kickbase-super-secret-jwt-key-2026
+    networks:
+      - kickbase-network
 
   prometheus:
     image: prom/prometheus:latest
+    container_name: kickbase-prometheus
+    restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml
     depends_on:
       - app
-    profiles:
-      - monitoring
+    networks:
+      - kickbase-network
 
   grafana:
     image: grafana/grafana:latest
+    container_name: kickbase-grafana
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
@@ -59,8 +67,12 @@ services:
       - ./deploy/grafana/dashboards:/etc/grafana/provisioning/dashboards
     depends_on:
       - prometheus
-    profiles:
-      - monitoring
+    networks:
+      - kickbase-network
 
 volumes:
   pgdata:
+
+networks:
+  kickbase-network:
+    driver: bridge

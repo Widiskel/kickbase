@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"kickbase/internal/domain"
+	"kickbase/internal/interfaces"
 	"kickbase/internal/service"
 	"kickbase/test/mocks"
 
@@ -139,14 +140,14 @@ func TestPlayerService_GetPlayer_Success(t *testing.T) {
 	assert.Equal(t, "Bambang", player.Name)
 }
 
-func TestPlayerService_ListPlayersByTeam(t *testing.T) {
+func TestPlayerService_ListPlayers(t *testing.T) {
 	mockTeamRepo := &mocks.MockTeamRepository{
 		FindByIDFunc: func(id string) (*domain.Team, error) {
 			return &domain.Team{ID: id, Name: "Persija"}, nil
 		},
 	}
 	mockPlayerRepo := &mocks.MockPlayerRepository{
-		ListByTeamFunc: func(teamID string, page, limit int) ([]domain.Player, int64, error) {
+		ListFunc: func(opts interfaces.PlayerFilterOptions) ([]domain.Player, int64, error) {
 			return []domain.Player{
 				{ID: "p-1", Name: "Player 1"},
 				{ID: "p-2", Name: "Player 2"},
@@ -156,7 +157,7 @@ func TestPlayerService_ListPlayersByTeam(t *testing.T) {
 
 	svc := service.NewPlayerService(mockPlayerRepo, mockTeamRepo)
 
-	players, total, err := svc.ListPlayersByTeam("team-1", 1, 10)
+	players, total, err := svc.ListPlayers(interfaces.PlayerFilterOptions{TeamID: "team-1", Page: 1, Limit: 10})
 	assert.NoError(t, err)
 	assert.Len(t, players, 2)
 	assert.Equal(t, int64(2), total)

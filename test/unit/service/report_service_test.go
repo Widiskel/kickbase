@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"kickbase/internal/domain"
+	"kickbase/internal/interfaces"
 	"kickbase/internal/service"
 	"kickbase/test/mocks"
 
@@ -204,7 +205,7 @@ func TestReportService_GetMatchReport_NotFound(t *testing.T) {
 
 func TestReportService_ListMatchReports(t *testing.T) {
 	mockMatchRepo := &mocks.MockMatchRepository{
-		ListFunc: func(page, limit int) ([]domain.Match, int64, error) {
+		ListFunc: func(opts interfaces.MatchFilterOptions) ([]domain.Match, int64, error) {
 			return []domain.Match{
 				{ID: "m-1", MatchDate: "2026-09-01", HomeTeamID: "t-1", AwayTeamID: "t-2", Status: "scheduled"},
 			}, 1, nil
@@ -226,7 +227,7 @@ func TestReportService_ListMatchReports(t *testing.T) {
 
 	svc := service.NewReportService(nil, mockMatchRepo, mockResultRepo, nil, mockTeamRepo, nil)
 
-	reports, total, err := svc.ListMatchReports(1, 10)
+	reports, total, err := svc.ListMatchReports(interfaces.ReportFilterOptions{Page: 1, Limit: 10, Status: "scheduled"})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Len(t, reports, 1)

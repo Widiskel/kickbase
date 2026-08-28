@@ -11,7 +11,8 @@ type MockPlayerRepository struct {
 	CreateFunc                   func(player *domain.Player) error
 	FindByIDFunc                 func(id string) (*domain.Player, error)
 	FindByIDIncludingDeletedFunc func(id string) (*domain.Player, error)
-	ListByTeamFunc               func(teamID string, page, limit int) ([]domain.Player, int64, error)
+	ListFunc                     func(opts interfaces.PlayerFilterOptions) ([]domain.Player, int64, error)
+	CountTotalFunc               func() (int64, error)
 	UpdateFunc                   func(player *domain.Player) error
 	DeleteFunc                   func(id string) error
 	CheckJerseyUniqueFunc        func(teamID string, jerseyNumber int, excludeID string) (bool, error)
@@ -42,11 +43,18 @@ func (m *MockPlayerRepository) FindByIDIncludingDeleted(id string) (*domain.Play
 	return nil, nil
 }
 
-func (m *MockPlayerRepository) ListByTeam(teamID string, page, limit int) ([]domain.Player, int64, error) {
-	if m.ListByTeamFunc != nil {
-		return m.ListByTeamFunc(teamID, page, limit)
+func (m *MockPlayerRepository) List(opts interfaces.PlayerFilterOptions) ([]domain.Player, int64, error) {
+	if m.ListFunc != nil {
+		return m.ListFunc(opts)
 	}
 	return nil, 0, nil
+}
+
+func (m *MockPlayerRepository) CountTotal() (int64, error) {
+	if m.CountTotalFunc != nil {
+		return m.CountTotalFunc()
+	}
+	return 0, nil
 }
 
 func (m *MockPlayerRepository) Update(player *domain.Player) error {

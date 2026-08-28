@@ -73,8 +73,13 @@ func (s *PlayerService) GetPlayer(id string) (*domain.Player, error) {
 	return s.playerRepo.FindByID(id)
 }
 
-func (s *PlayerService) ListPlayersByTeam(teamID string, page, limit int) ([]domain.Player, int64, error) {
-	return s.playerRepo.ListByTeam(teamID, page, limit)
+func (s *PlayerService) ListPlayers(opts interfaces.PlayerFilterOptions) ([]domain.Player, int64, error) {
+	if opts.TeamID != "" {
+		if _, err := s.teamRepo.FindByID(opts.TeamID); err != nil {
+			return nil, 0, errors.New("team not found")
+		}
+	}
+	return s.playerRepo.List(opts)
 }
 
 func (s *PlayerService) UpdatePlayer(player *domain.Player) error {

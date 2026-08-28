@@ -158,7 +158,7 @@ const docTemplate = `{
         },
         "/api/matches": {
             "get": {
-                "description": "Get a paginated list of all matches",
+                "description": "Get a paginated list of matches with optional team, status, date filtering and sorting",
                 "produces": [
                     "application/json"
                 ],
@@ -179,6 +179,44 @@ const docTemplate = `{
                         "default": 10,
                         "description": "Items per page",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by team ID (home or away)",
+                        "name": "team_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status (scheduled, completed, cancelled, deferred)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter matches starting from date (YYYY-MM-DD)",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter matches up to date (YYYY-MM-DD)",
+                        "name": "date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "match_date",
+                        "description": "Sort field (match_date, match_time, created_at)",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "asc",
+                        "description": "Sort order (asc, desc)",
+                        "name": "order",
                         "in": "query"
                     }
                 ],
@@ -408,7 +446,7 @@ const docTemplate = `{
         },
         "/api/players": {
             "get": {
-                "description": "Get a paginated list of players, optionally filtered by team",
+                "description": "Get a paginated list of players with optional team, position, name filtering and sorting",
                 "produces": [
                     "application/json"
                 ],
@@ -417,12 +455,6 @@ const docTemplate = `{
                 ],
                 "summary": "List all players",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Filter by team ID",
-                        "name": "team_id",
-                        "in": "query"
-                    },
                     {
                         "type": "integer",
                         "default": 1,
@@ -435,6 +467,38 @@ const docTemplate = `{
                         "default": 10,
                         "description": "Items per page",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by team ID",
+                        "name": "team_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by player name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by position (CF, SS, CMF, CB, GK, etc.)",
+                        "name": "position",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "jersey_number",
+                        "description": "Sort field (name, jersey_number, height, weight, created_at)",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "asc",
+                        "description": "Sort order (asc, desc)",
+                        "name": "order",
                         "in": "query"
                     }
                 ],
@@ -704,7 +768,7 @@ const docTemplate = `{
         },
         "/api/reports/matches": {
             "get": {
-                "description": "Get a paginated list of all match reports with scores and status",
+                "description": "Get a paginated list of match reports with optional team and result status filtering",
                 "produces": [
                     "application/json"
                 ],
@@ -725,6 +789,32 @@ const docTemplate = `{
                         "default": 10,
                         "description": "Items per page",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by team ID",
+                        "name": "team_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by match status / outcome (Tim Home Menang, Tim Away Menang, Draw, scheduled)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "match_date",
+                        "description": "Sort field (match_date, created_at)",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "asc",
+                        "description": "Sort order (asc, desc)",
+                        "name": "order",
                         "in": "query"
                     }
                 ],
@@ -868,7 +958,7 @@ const docTemplate = `{
         },
         "/api/teams": {
             "get": {
-                "description": "Get a paginated list of all non-deleted teams",
+                "description": "Get a paginated list of teams with optional search and sorting",
                 "produces": [
                     "application/json"
                 ],
@@ -889,6 +979,32 @@ const docTemplate = `{
                         "default": 10,
                         "description": "Items per page",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by team name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by headquarters city",
+                        "name": "city",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "created_at",
+                        "description": "Sort field (name, city, founded_year, created_at)",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "asc",
+                        "description": "Sort order (asc, desc)",
+                        "name": "order",
                         "in": "query"
                     }
                 ],

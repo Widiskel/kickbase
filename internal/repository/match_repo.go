@@ -2,6 +2,8 @@ package repository
 
 import (
 	"kickbase/internal/domain"
+	"kickbase/internal/interfaces"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -26,14 +28,64 @@ func (r *MatchRepository) FindByID(id string) (*domain.Match, error) {
 	return &match, nil
 }
 
-func (r *MatchRepository) List(page, limit int) ([]domain.Match, int64, error) {
+func (r *MatchRepository) List(opts interfaces.MatchFilterOptions) ([]domain.Match, int64, error) {
 	var matches []domain.Match
 	var total int64
 
-	r.db.Model(&domain.Match{}).Count(&total)
-	r.db.Offset((page - 1) * limit).Limit(limit).Find(&matches)
+	query := r.db.Model(&domain.Match{})
 
-	return matches, total, nil
+	if opts.TeamID != "" {
+		query = query.Where("home_team_id = ? OR away_team_id = ?", opts.TeamID, opts.TeamID)
+	}
+	if opts.Status != "" {
+		query = query.Where("status = ?", opts.Status)
+	}
+	if opts.DateFrom != "" {
+		query = query.Where("match_date >= ?", opts.DateFrom)
+	}
+	if opts.DateTo != "" {
+		query = query.Where("match_date <= ?", opts.DateTo)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Sorting
+	sortBy := "match_date"
+	order := "ASC"
+	if opts.SortBy != "" {
+		switch opts.SortBy {
+		case "match_date", "match_time", "created_at":
+			sortBy = opts.SortBy
+		}
+	}
+	if strings.ToUpper(opts.Order) == "DESC" {
+		order = "DESC"
+	}
+	query = query.Order(sortBy + " " + order)
+
+	if opts.Limit <= 0 {
+		opts.Limit = 10
+	}
+	if opts.Page <= 0 {
+		opts.Page = 1
+	}
+
+	err := query.Offset((opts.Page - 1) * opts.Limit).Limit(opts.Limit).Find(&matches).Error
+	return matches, total, err
+}
+
+func (r *MatchRepository) CountTotal() (int64, error) {
+	var count int64
+	err := r.db.Model(&domain.Match{}).Count(&count).Error
+	return count, err
+}
+
+func (r *MatchRepository) CountCompleted() (int64, error) {
+	var count int64
+	err := r.db.Model(&domain.Match{}).Where("status = ?", "completed").Count(&count).Error
+	return count, err
 }
 
 func (r *MatchRepository) Update(match *domain.Match) error {

@@ -5,22 +5,21 @@ import (
 	"kickbase/internal/interfaces"
 )
 
-// Ensure MockTeamRepository implements interfaces.TeamRepository
 var _ interfaces.TeamRepository = (*MockTeamRepository)(nil)
 
-// MockTeamRepository is a mock implementation of TeamRepository
 type MockTeamRepository struct {
-	CreateFunc                 func(team *domain.Team) error
-	FindByIDFunc               func(id string) (*domain.Team, error)
+	CreateFunc                   func(team *domain.Team) error
+	FindByIDFunc                 func(id string) (*domain.Team, error)
 	FindByIDIncludingDeletedFunc func(id string) (*domain.Team, error)
-	FindByNameFunc             func(name string) (*domain.Team, error)
-	ListFunc                   func(page, limit int) ([]domain.Team, int64, error)
-	UpdateFunc                 func(team *domain.Team) error
-	DeleteFunc                 func(id string) error
-	CountPlayersFunc           func(teamID string) (int64, error)
-	CreateHistoryFunc          func(history *domain.TeamHistory) error
-	GetHistoryFunc             func(teamID string) ([]domain.TeamHistory, error)
-	GetHistoryByVersionFunc    func(teamID string, version int) (*domain.TeamHistory, error)
+	FindByNameFunc               func(name string) (*domain.Team, error)
+	ListFunc                     func(opts interfaces.TeamFilterOptions) ([]domain.Team, int64, error)
+	CountTotalFunc               func() (int64, error)
+	UpdateFunc                   func(team *domain.Team) error
+	DeleteFunc                   func(id string) error
+	CountPlayersFunc             func(teamID string) (int64, error)
+	CreateHistoryFunc            func(history *domain.TeamHistory) error
+	GetHistoryFunc               func(teamID string) ([]domain.TeamHistory, error)
+	GetHistoryByVersionFunc      func(teamID string, version int) (*domain.TeamHistory, error)
 }
 
 func (m *MockTeamRepository) Create(team *domain.Team) error {
@@ -51,11 +50,18 @@ func (m *MockTeamRepository) FindByName(name string) (*domain.Team, error) {
 	return nil, nil
 }
 
-func (m *MockTeamRepository) List(page, limit int) ([]domain.Team, int64, error) {
+func (m *MockTeamRepository) List(opts interfaces.TeamFilterOptions) ([]domain.Team, int64, error) {
 	if m.ListFunc != nil {
-		return m.ListFunc(page, limit)
+		return m.ListFunc(opts)
 	}
 	return nil, 0, nil
+}
+
+func (m *MockTeamRepository) CountTotal() (int64, error) {
+	if m.CountTotalFunc != nil {
+		return m.CountTotalFunc()
+	}
+	return 0, nil
 }
 
 func (m *MockTeamRepository) Update(team *domain.Team) error {

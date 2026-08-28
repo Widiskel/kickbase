@@ -67,8 +67,8 @@ func (s *MatchService) GetMatch(id string) (*domain.Match, error) {
 	return s.matchRepo.FindByID(id)
 }
 
-func (s *MatchService) ListMatches(page, limit int) ([]domain.Match, int64, error) {
-	return s.matchRepo.List(page, limit)
+func (s *MatchService) ListMatches(opts interfaces.MatchFilterOptions) ([]domain.Match, int64, error) {
+	return s.matchRepo.List(opts)
 }
 
 func (s *MatchService) UpdateMatchStatus(id string, status string) error {

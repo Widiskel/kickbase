@@ -2,6 +2,8 @@ package repository
 
 import (
 	"kickbase/internal/domain"
+	"kickbase/internal/interfaces"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -26,14 +28,63 @@ func (r *PlayerRepository) FindByID(id string) (*domain.Player, error) {
 	return &player, nil
 }
 
-func (r *PlayerRepository) ListByTeam(teamID string, page, limit int) ([]domain.Player, int64, error) {
+func (r *PlayerRepository) FindByIDIncludingDeleted(id string) (*domain.Player, error) {
+	var player domain.Player
+	if err := r.db.Unscoped().First(&player, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &player, nil
+}
+
+func (r *PlayerRepository) List(opts interfaces.PlayerFilterOptions) ([]domain.Player, int64, error) {
 	var players []domain.Player
 	var total int64
 
-	r.db.Model(&domain.Player{}).Where("team_id = ?", teamID).Count(&total)
-	r.db.Where("team_id = ?", teamID).Offset((page - 1) * limit).Limit(limit).Find(&players)
+	query := r.db.Model(&domain.Player{})
 
-	return players, total, nil
+	if opts.TeamID != "" {
+		query = query.Where("team_id = ?", opts.TeamID)
+	}
+	if opts.Name != "" {
+		query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(opts.Name)+"%")
+	}
+	if opts.Position != "" {
+		query = query.Where("position = ?", opts.Position)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Sorting
+	sortBy := "jersey_number"
+	order := "ASC"
+	if opts.SortBy != "" {
+		switch opts.SortBy {
+		case "name", "jersey_number", "height", "weight", "created_at":
+			sortBy = opts.SortBy
+		}
+	}
+	if strings.ToUpper(opts.Order) == "DESC" {
+		order = "DESC"
+	}
+	query = query.Order(sortBy + " " + order)
+
+	if opts.Limit <= 0 {
+		opts.Limit = 10
+	}
+	if opts.Page <= 0 {
+		opts.Page = 1
+	}
+
+	err := query.Offset((opts.Page - 1) * opts.Limit).Limit(opts.Limit).Find(&players).Error
+	return players, total, err
+}
+
+func (r *PlayerRepository) CountTotal() (int64, error) {
+	var count int64
+	err := r.db.Model(&domain.Player{}).Count(&count).Error
+	return count, err
 }
 
 func (r *PlayerRepository) Update(player *domain.Player) error {
@@ -68,14 +119,6 @@ func (r *PlayerRepository) GetHistory(playerID string) ([]domain.PlayerHistory, 
 	var history []domain.PlayerHistory
 	err := r.db.Where("player_id = ?", playerID).Order("version DESC").Find(&history).Error
 	return history, err
-}
-
-func (r *PlayerRepository) FindByIDIncludingDeleted(id string) (*domain.Player, error) {
-	var player domain.Player
-	if err := r.db.Unscoped().First(&player, "id = ?", id).Error; err != nil {
-		return nil, err
-	}
-	return &player, nil
 }
 
 func (r *PlayerRepository) GetHistoryByVersion(playerID string, version int) (*domain.PlayerHistory, error) {

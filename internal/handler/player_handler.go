@@ -56,29 +56,41 @@ func (h *PlayerHandler) CreatePlayer(c *gin.Context) {
 
 // ListPlayers godoc
 // @Summary List all players
-// @Description Get a paginated list of players, optionally filtered by team
+// @Description Get a paginated list of players with optional team, position, name filtering and sorting
 // @Tags Players
 // @Produce json
-// @Param team_id query string false "Filter by team ID"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
+// @Param team_id query string false "Filter by team ID"
+// @Param name query string false "Filter by player name"
+// @Param position query string false "Filter by position (CF, SS, CMF, CB, GK, etc.)"
+// @Param sort_by query string false "Sort field (name, jersey_number, height, weight, created_at)" default(jersey_number)
+// @Param order query string false "Sort order (asc, desc)" default(asc)
 // @Success 200 {object} PaginatedResponse
 // @Router /api/players [get]
 func (h *PlayerHandler) ListPlayers(c *gin.Context) {
-	teamID := c.Query("team_id")
 	page, limit := GetPagination(c)
-
-	if teamID != "" {
-		players, total, err := h.playerService.ListPlayersByTeam(teamID, page, limit)
-		if err != nil {
-			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list players", nil)
-			return
-		}
-		RespondPaginated(c, players, total, page, limit)
-	} else {
-		// List all players - for now, return empty (could add ListAllPlayers to service)
-		RespondPaginated(c, []interface{}{}, 0, page, limit)
+	opts := interfaces.PlayerFilterOptions{
+		Page:     page,
+		Limit:    limit,
+		TeamID:   c.Query("team_id"),
+		Name:     c.Query("name"),
+		Position: c.Query("position"),
+		SortBy:   c.Query("sort_by"),
+		Order:    c.Query("order"),
 	}
+
+	players, total, err := h.playerService.ListPlayers(opts)
+	if err != nil {
+		if err.Error() == "team not found" {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
+		} else {
+			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list players", nil)
+		}
+		return
+	}
+
+	RespondPaginated(c, players, total, page, limit)
 }
 
 // GetPlayer godoc

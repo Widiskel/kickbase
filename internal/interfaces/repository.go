@@ -2,13 +2,57 @@ package interfaces
 
 import "kickbase/internal/domain"
 
+// TeamFilterOptions defines filters and sorting for listing teams
+type TeamFilterOptions struct {
+	Name    string
+	City    string
+	SortBy  string
+	Order   string
+	Page    int
+	Limit   int
+}
+
+// PlayerFilterOptions defines filters and sorting for listing players
+type PlayerFilterOptions struct {
+	TeamID   string
+	Name     string
+	Position string
+	SortBy   string
+	Order    string
+	Page     int
+	Limit    int
+}
+
+// MatchFilterOptions defines filters and sorting for listing matches
+type MatchFilterOptions struct {
+	TeamID   string
+	Status   string
+	DateFrom string
+	DateTo   string
+	SortBy   string
+	Order    string
+	Page     int
+	Limit    int
+}
+
+// ReportFilterOptions defines filters and sorting for listing match reports
+type ReportFilterOptions struct {
+	TeamID string
+	Status string
+	SortBy string
+	Order  string
+	Page   int
+	Limit  int
+}
+
 // TeamRepository defines the interface for team data access
 type TeamRepository interface {
 	Create(team *domain.Team) error
 	FindByID(id string) (*domain.Team, error)
 	FindByIDIncludingDeleted(id string) (*domain.Team, error)
 	FindByName(name string) (*domain.Team, error)
-	List(page, limit int) ([]domain.Team, int64, error)
+	List(opts TeamFilterOptions) ([]domain.Team, int64, error)
+	CountTotal() (int64, error)
 	Update(team *domain.Team) error
 	Delete(id string) error
 	CountPlayers(teamID string) (int64, error)
@@ -22,7 +66,8 @@ type PlayerRepository interface {
 	Create(player *domain.Player) error
 	FindByID(id string) (*domain.Player, error)
 	FindByIDIncludingDeleted(id string) (*domain.Player, error)
-	ListByTeam(teamID string, page, limit int) ([]domain.Player, int64, error)
+	List(opts PlayerFilterOptions) ([]domain.Player, int64, error)
+	CountTotal() (int64, error)
 	Update(player *domain.Player) error
 	Delete(id string) error
 	CheckJerseyUnique(teamID string, jerseyNumber int, excludeID string) (bool, error)
@@ -36,7 +81,9 @@ type PlayerRepository interface {
 type MatchRepository interface {
 	Create(match *domain.Match) error
 	FindByID(id string) (*domain.Match, error)
-	List(page, limit int) ([]domain.Match, int64, error)
+	List(opts MatchFilterOptions) ([]domain.Match, int64, error)
+	CountTotal() (int64, error)
+	CountCompleted() (int64, error)
 	Update(match *domain.Match) error
 	CreateHistory(history *domain.MatchHistory) error
 	GetHistory(matchID string) ([]domain.MatchHistory, error)

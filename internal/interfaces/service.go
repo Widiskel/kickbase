@@ -6,7 +6,7 @@ import "kickbase/internal/domain"
 type TeamService interface {
 	CreateTeam(team *domain.Team) error
 	GetTeam(id string) (*domain.Team, error)
-	ListTeams(page, limit int) ([]domain.Team, int64, error)
+	ListTeams(opts TeamFilterOptions) ([]domain.Team, int64, error)
 	UpdateTeam(team *domain.Team) error
 	DeleteTeam(id string) error
 	GetTeamHistory(teamID string) ([]domain.TeamHistory, error)
@@ -17,7 +17,7 @@ type TeamService interface {
 type PlayerService interface {
 	CreatePlayer(player *domain.Player) error
 	GetPlayer(id string) (*domain.Player, error)
-	ListPlayersByTeam(teamID string, page, limit int) ([]domain.Player, int64, error)
+	ListPlayers(opts PlayerFilterOptions) ([]domain.Player, int64, error)
 	UpdatePlayer(player *domain.Player) error
 	DeletePlayer(id string) error
 	GetPlayerHistory(playerID string) ([]domain.PlayerHistory, error)
@@ -28,7 +28,7 @@ type PlayerService interface {
 type MatchService interface {
 	CreateMatch(match *domain.Match) error
 	GetMatch(id string) (*domain.Match, error)
-	ListMatches(page, limit int) ([]domain.Match, int64, error)
+	ListMatches(opts MatchFilterOptions) ([]domain.Match, int64, error)
 	UpdateMatchStatus(id string, status string) error
 	GetMatchHistory(matchID string) ([]domain.MatchHistory, error)
 	RevertMatch(matchID string, targetVersion int) error
@@ -43,7 +43,7 @@ type ResultService interface {
 // ReportService defines the interface for report business logic
 type ReportService interface {
 	GetMatchReport(matchID string) (*MatchReport, error)
-	ListMatchReports(page, limit int) ([]MatchReport, int64, error)
+	ListMatchReports(opts ReportFilterOptions) ([]MatchReport, int64, error)
 }
 
 // AuthService defines the interface for authentication & authorization business logic
@@ -92,7 +92,7 @@ type MatchReport struct {
 	CumulativeAwayWins int         `json:"cumulative_away_wins"`
 }
 
-// TopScorer represents a top goal scorer
+// TopScorer represents a top scorer in a match report
 type TopScorer struct {
 	PlayerID   string `json:"player_id"`
 	PlayerName string `json:"player_name"`

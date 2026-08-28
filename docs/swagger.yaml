@@ -314,7 +314,8 @@ paths:
       - Auth
   /api/matches:
     get:
-      description: Get a paginated list of all matches
+      description: Get a paginated list of matches with optional team, status, date
+        filtering and sorting
       parameters:
       - default: 1
         description: Page number
@@ -326,6 +327,32 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Filter by team ID (home or away)
+        in: query
+        name: team_id
+        type: string
+      - description: Filter by status (scheduled, completed, cancelled, deferred)
+        in: query
+        name: status
+        type: string
+      - description: Filter matches starting from date (YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: Filter matches up to date (YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
+      - default: match_date
+        description: Sort field (match_date, match_time, created_at)
+        in: query
+        name: sort_by
+        type: string
+      - default: asc
+        description: Sort order (asc, desc)
+        in: query
+        name: order
+        type: string
       produces:
       - application/json
       responses:
@@ -480,12 +507,9 @@ paths:
       - Matches
   /api/players:
     get:
-      description: Get a paginated list of players, optionally filtered by team
+      description: Get a paginated list of players with optional team, position, name
+        filtering and sorting
       parameters:
-      - description: Filter by team ID
-        in: query
-        name: team_id
-        type: string
       - default: 1
         description: Page number
         in: query
@@ -496,6 +520,28 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Filter by team ID
+        in: query
+        name: team_id
+        type: string
+      - description: Filter by player name
+        in: query
+        name: name
+        type: string
+      - description: Filter by position (CF, SS, CMF, CB, GK, etc.)
+        in: query
+        name: position
+        type: string
+      - default: jersey_number
+        description: Sort field (name, jersey_number, height, weight, created_at)
+        in: query
+        name: sort_by
+        type: string
+      - default: asc
+        description: Sort order (asc, desc)
+        in: query
+        name: order
+        type: string
       produces:
       - application/json
       responses:
@@ -676,7 +722,8 @@ paths:
       - Players
   /api/reports/matches:
     get:
-      description: Get a paginated list of all match reports with scores and status
+      description: Get a paginated list of match reports with optional team and result
+        status filtering
       parameters:
       - default: 1
         description: Page number
@@ -688,6 +735,25 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Filter by team ID
+        in: query
+        name: team_id
+        type: string
+      - description: Filter by match status / outcome (Tim Home Menang, Tim Away Menang,
+          Draw, scheduled)
+        in: query
+        name: status
+        type: string
+      - default: match_date
+        description: Sort field (match_date, created_at)
+        in: query
+        name: sort_by
+        type: string
+      - default: asc
+        description: Sort order (asc, desc)
+        in: query
+        name: order
+        type: string
       produces:
       - application/json
       responses:
@@ -785,7 +851,7 @@ paths:
       - Results
   /api/teams:
     get:
-      description: Get a paginated list of all non-deleted teams
+      description: Get a paginated list of teams with optional search and sorting
       parameters:
       - default: 1
         description: Page number
@@ -797,6 +863,24 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Filter by team name
+        in: query
+        name: name
+        type: string
+      - description: Filter by headquarters city
+        in: query
+        name: city
+        type: string
+      - default: created_at
+        description: Sort field (name, city, founded_year, created_at)
+        in: query
+        name: sort_by
+        type: string
+      - default: asc
+        description: Sort order (asc, desc)
+        in: query
+        name: order
+        type: string
       produces:
       - application/json
       responses:

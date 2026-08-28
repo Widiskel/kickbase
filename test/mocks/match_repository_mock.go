@@ -10,7 +10,9 @@ var _ interfaces.MatchRepository = (*MockMatchRepository)(nil)
 type MockMatchRepository struct {
 	CreateFunc              func(match *domain.Match) error
 	FindByIDFunc            func(id string) (*domain.Match, error)
-	ListFunc                func(page, limit int) ([]domain.Match, int64, error)
+	ListFunc                func(opts interfaces.MatchFilterOptions) ([]domain.Match, int64, error)
+	CountTotalFunc          func() (int64, error)
+	CountCompletedFunc      func() (int64, error)
 	UpdateFunc              func(match *domain.Match) error
 	CreateHistoryFunc       func(history *domain.MatchHistory) error
 	GetHistoryFunc          func(matchID string) ([]domain.MatchHistory, error)
@@ -31,11 +33,25 @@ func (m *MockMatchRepository) FindByID(id string) (*domain.Match, error) {
 	return nil, nil
 }
 
-func (m *MockMatchRepository) List(page, limit int) ([]domain.Match, int64, error) {
+func (m *MockMatchRepository) List(opts interfaces.MatchFilterOptions) ([]domain.Match, int64, error) {
 	if m.ListFunc != nil {
-		return m.ListFunc(page, limit)
+		return m.ListFunc(opts)
 	}
 	return nil, 0, nil
+}
+
+func (m *MockMatchRepository) CountTotal() (int64, error) {
+	if m.CountTotalFunc != nil {
+		return m.CountTotalFunc()
+	}
+	return 0, nil
+}
+
+func (m *MockMatchRepository) CountCompleted() (int64, error) {
+	if m.CountCompletedFunc != nil {
+		return m.CountCompletedFunc()
+	}
+	return 0, nil
 }
 
 func (m *MockMatchRepository) Update(match *domain.Match) error {

@@ -53,8 +53,8 @@ func (s *TeamService) GetTeam(id string) (*domain.Team, error) {
 	return s.teamRepo.FindByID(id)
 }
 
-func (s *TeamService) ListTeams(page, limit int) ([]domain.Team, int64, error) {
-	return s.teamRepo.List(page, limit)
+func (s *TeamService) ListTeams(opts interfaces.TeamFilterOptions) ([]domain.Team, int64, error) {
+	return s.teamRepo.List(opts)
 }
 
 func (s *TeamService) UpdateTeam(team *domain.Team) error {

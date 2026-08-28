@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"kickbase/internal/domain"
+	"kickbase/internal/interfaces"
 	"kickbase/internal/service"
 	"kickbase/test/mocks"
 
@@ -103,7 +104,7 @@ func TestMatchService_GetMatch(t *testing.T) {
 
 func TestMatchService_ListMatches(t *testing.T) {
 	mockMatchRepo := &mocks.MockMatchRepository{
-		ListFunc: func(page, limit int) ([]domain.Match, int64, error) {
+		ListFunc: func(opts interfaces.MatchFilterOptions) ([]domain.Match, int64, error) {
 			return []domain.Match{
 				{ID: "m-1", Status: "scheduled"},
 				{ID: "m-2", Status: "completed"},
@@ -113,7 +114,7 @@ func TestMatchService_ListMatches(t *testing.T) {
 
 	svc := service.NewMatchService(mockMatchRepo, nil)
 
-	matches, total, err := svc.ListMatches(1, 10)
+	matches, total, err := svc.ListMatches(interfaces.MatchFilterOptions{Page: 1, Limit: 10, Status: "scheduled"})
 	assert.NoError(t, err)
 	assert.Len(t, matches, 2)
 	assert.Equal(t, int64(2), total)

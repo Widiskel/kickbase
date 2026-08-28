@@ -24,15 +24,6 @@ func Setup(db *gorm.DB) *gin.Engine {
 	r.Use(middleware.Logger())
 	r.Use(middleware.PrometheusMetrics())
 
-	// Metrics endpoint
-	r.GET("/metrics", func(c *gin.Context) {
-		c.Header("Content-Type", "text/plain; charset=utf-8")
-		c.String(200, middleware.GetMetrics())
-	})
-
-	// Swagger documentation
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
@@ -41,6 +32,12 @@ func Setup(db *gorm.DB) *gin.Engine {
 	matchRepo := repository.NewMatchRepository(db)
 	resultRepo := repository.NewResultRepository(db)
 	goalRepo := repository.NewGoalRepository(db)
+
+	// Metrics endpoint (Prometheus live scraping)
+	r.GET("/metrics", middleware.PrometheusHandler(teamRepo, playerRepo, matchRepo))
+
+	// Swagger documentation
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Initialize services
 	authSvc := service.NewAuthService(userRepo, refreshTokenRepo, cfg.JWTSecret)

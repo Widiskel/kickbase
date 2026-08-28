@@ -51,17 +51,29 @@ func (h *TeamHandler) CreateTeam(c *gin.Context) {
 
 // ListTeams godoc
 // @Summary List all teams
-// @Description Get a paginated list of all non-deleted teams
+// @Description Get a paginated list of teams with optional search and sorting
 // @Tags Teams
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
+// @Param name query string false "Filter by team name"
+// @Param city query string false "Filter by headquarters city"
+// @Param sort_by query string false "Sort field (name, city, founded_year, created_at)" default(created_at)
+// @Param order query string false "Sort order (asc, desc)" default(asc)
 // @Success 200 {object} PaginatedResponse
 // @Router /api/teams [get]
 func (h *TeamHandler) ListTeams(c *gin.Context) {
 	page, limit := GetPagination(c)
+	opts := interfaces.TeamFilterOptions{
+		Page:    page,
+		Limit:   limit,
+		Name:    c.Query("name"),
+		City:    c.Query("city"),
+		SortBy:  c.Query("sort_by"),
+		Order:   c.Query("order"),
+	}
 
-	teams, total, err := h.teamService.ListTeams(page, limit)
+	teams, total, err := h.teamService.ListTeams(opts)
 	if err != nil {
 		RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list teams", nil)
 		return

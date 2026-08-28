@@ -2,6 +2,8 @@ package repository
 
 import (
 	"kickbase/internal/domain"
+	"kickbase/internal/interfaces"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -26,6 +28,14 @@ func (r *TeamRepository) FindByID(id string) (*domain.Team, error) {
 	return &team, nil
 }
 
+func (r *TeamRepository) FindByIDIncludingDeleted(id string) (*domain.Team, error) {
+	var team domain.Team
+	if err := r.db.Unscoped().First(&team, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &team, nil
+}
+
 func (r *TeamRepository) FindByName(name string) (*domain.Team, error) {
 	var team domain.Team
 	if err := r.db.First(&team, "name = ?", name).Error; err != nil {
@@ -34,14 +44,52 @@ func (r *TeamRepository) FindByName(name string) (*domain.Team, error) {
 	return &team, nil
 }
 
-func (r *TeamRepository) List(page, limit int) ([]domain.Team, int64, error) {
+func (r *TeamRepository) List(opts interfaces.TeamFilterOptions) ([]domain.Team, int64, error) {
 	var teams []domain.Team
 	var total int64
 
-	r.db.Model(&domain.Team{}).Count(&total)
-	r.db.Offset((page - 1) * limit).Limit(limit).Find(&teams)
+	query := r.db.Model(&domain.Team{})
 
-	return teams, total, nil
+	if opts.Name != "" {
+		query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(opts.Name)+"%")
+	}
+	if opts.City != "" {
+		query = query.Where("LOWER(city) = ?", strings.ToLower(opts.City))
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Sorting
+	sortBy := "created_at"
+	order := "ASC"
+	if opts.SortBy != "" {
+		switch opts.SortBy {
+		case "name", "city", "founded_year", "created_at":
+			sortBy = opts.SortBy
+		}
+	}
+	if strings.ToUpper(opts.Order) == "DESC" {
+		order = "DESC"
+	}
+	query = query.Order(sortBy + " " + order)
+
+	if opts.Limit <= 0 {
+		opts.Limit = 10
+	}
+	if opts.Page <= 0 {
+		opts.Page = 1
+	}
+
+	err := query.Offset((opts.Page - 1) * opts.Limit).Limit(opts.Limit).Find(&teams).Error
+	return teams, total, err
+}
+
+func (r *TeamRepository) CountTotal() (int64, error) {
+	var count int64
+	err := r.db.Model(&domain.Team{}).Count(&count).Error
+	return count, err
 }
 
 func (r *TeamRepository) Update(team *domain.Team) error {
@@ -66,14 +114,6 @@ func (r *TeamRepository) GetHistory(teamID string) ([]domain.TeamHistory, error)
 	var history []domain.TeamHistory
 	err := r.db.Where("team_id = ?", teamID).Order("version DESC").Find(&history).Error
 	return history, err
-}
-
-func (r *TeamRepository) FindByIDIncludingDeleted(id string) (*domain.Team, error) {
-	var team domain.Team
-	if err := r.db.Unscoped().First(&team, "id = ?", id).Error; err != nil {
-		return nil, err
-	}
-	return &team, nil
 }
 
 func (r *TeamRepository) GetHistoryByVersion(teamID string, version int) (*domain.TeamHistory, error) {

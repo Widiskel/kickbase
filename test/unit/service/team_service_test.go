@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"kickbase/internal/domain"
+	"kickbase/internal/interfaces"
 	"kickbase/internal/service"
 	"kickbase/test/mocks"
 
@@ -97,7 +98,7 @@ func TestTeamService_GetTeam_NotFound(t *testing.T) {
 
 func TestTeamService_ListTeams(t *testing.T) {
 	mockRepo := &mocks.MockTeamRepository{
-		ListFunc: func(page, limit int) ([]domain.Team, int64, error) {
+		ListFunc: func(opts interfaces.TeamFilterOptions) ([]domain.Team, int64, error) {
 			return []domain.Team{
 				{ID: "team-1", Name: "Persija"},
 				{ID: "team-2", Name: "Persib"},
@@ -107,7 +108,7 @@ func TestTeamService_ListTeams(t *testing.T) {
 
 	svc := service.NewTeamService(mockRepo)
 
-	teams, total, err := svc.ListTeams(1, 10)
+	teams, total, err := svc.ListTeams(interfaces.TeamFilterOptions{Page: 1, Limit: 10, City: "Jakarta"})
 	assert.NoError(t, err)
 	assert.Len(t, teams, 2)
 	assert.Equal(t, int64(2), total)

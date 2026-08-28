@@ -111,16 +111,27 @@ func (s *ReportService) GetMatchReport(matchID string) (*interfaces.MatchReport,
 	return report, nil
 }
 
-func (s *ReportService) ListMatchReports(page, limit int) ([]interfaces.MatchReport, int64, error) {
-	matches, total, err := s.matchRepo.List(page, limit)
+func (s *ReportService) ListMatchReports(opts interfaces.ReportFilterOptions) ([]interfaces.MatchReport, int64, error) {
+	matchOpts := interfaces.MatchFilterOptions{
+		TeamID: opts.TeamID,
+		SortBy: opts.SortBy,
+		Order:  opts.Order,
+		Page:   opts.Page,
+		Limit:  opts.Limit,
+	}
+
+	matches, total, err := s.matchRepo.List(matchOpts)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to list matches: %w", err)
 	}
 
-	var reports []interfaces.MatchReport
+	reports := make([]interfaces.MatchReport, 0, len(matches))
 	for _, match := range matches {
 		report, err := s.GetMatchReport(match.ID)
 		if err != nil {
+			continue
+		}
+		if opts.Status != "" && report.Status != opts.Status {
 			continue
 		}
 		reports = append(reports, *report)

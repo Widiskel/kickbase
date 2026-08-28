@@ -54,17 +54,33 @@ func (h *MatchHandler) CreateMatch(c *gin.Context) {
 
 // ListMatches godoc
 // @Summary List all matches
-// @Description Get a paginated list of all matches
+// @Description Get a paginated list of matches with optional team, status, date filtering and sorting
 // @Tags Matches
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
+// @Param team_id query string false "Filter by team ID (home or away)"
+// @Param status query string false "Filter by status (scheduled, completed, cancelled, deferred)"
+// @Param date_from query string false "Filter matches starting from date (YYYY-MM-DD)"
+// @Param date_to query string false "Filter matches up to date (YYYY-MM-DD)"
+// @Param sort_by query string false "Sort field (match_date, match_time, created_at)" default(match_date)
+// @Param order query string false "Sort order (asc, desc)" default(asc)
 // @Success 200 {object} PaginatedResponse
 // @Router /api/matches [get]
 func (h *MatchHandler) ListMatches(c *gin.Context) {
 	page, limit := GetPagination(c)
+	opts := interfaces.MatchFilterOptions{
+		Page:     page,
+		Limit:    limit,
+		TeamID:   c.Query("team_id"),
+		Status:   c.Query("status"),
+		DateFrom: c.Query("date_from"),
+		DateTo:   c.Query("date_to"),
+		SortBy:   c.Query("sort_by"),
+		Order:    c.Query("order"),
+	}
 
-	matches, total, err := h.matchService.ListMatches(page, limit)
+	matches, total, err := h.matchService.ListMatches(opts)
 	if err != nil {
 		RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list matches", nil)
 		return
