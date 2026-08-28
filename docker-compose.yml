@@ -49,6 +49,7 @@ services:
       - "9090:9090"
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./deploy/prometheus_rules.yml:/etc/prometheus/prometheus_rules.yml
     depends_on:
       - app
     networks:

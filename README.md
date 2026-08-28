@@ -122,7 +122,9 @@ go run cmd/server/main.go
 | **OpenAPI Spec (JSON)** | [http://localhost:8080/swagger/doc.json](http://localhost:8080/swagger/doc.json) | - | Raw OpenAPI 2.0 JSON Specification |
 | **API Health Check** | [http://localhost:8080/api/health](http://localhost:8080/api/health) | - | Live DB & App Connectivity Health |
 | **Prometheus Metrics** | [http://localhost:8080/metrics](http://localhost:8080/metrics) | - | Prometheus Raw Text Exposition Endpoint |
-| **Prometheus Server UI** | [http://localhost:9090](http://localhost:9090) | - | PromQL Query & Metric Graphing |
+| **Prometheus Server UI** | [http://localhost:9090](http://localhost:9090) | - | PromQL Query Console & Metric Graphing |
+| **Prometheus Pre-Loaded Graphs** | [http://localhost:9090/graph?g0.expr=kickbase%3Ahttp_requests%3Arate1m&g0.tab=0&g1.expr=kickbase%3Ahttp_errors%3Aratio_pct&g1.tab=0&g2.expr=kickbase%3Alatency%3Ap95_seconds&g2.tab=0&g3.expr=kickbase%3Amemory%3Aheap_mb&g3.tab=0](http://localhost:9090/graph?g0.expr=kickbase%3Ahttp_requests%3Arate1m&g0.tab=0&g1.expr=kickbase%3Ahttp_errors%3Aratio_pct&g1.tab=0&g2.expr=kickbase%3Alatency%3Ap95_seconds&g2.tab=0&g3.expr=kickbase%3Amemory%3Aheap_mb&g3.tab=0) | - | 4 Pre-loaded Charts (Rate, Errors, Latency, RAM) |
+| **Prometheus Pre-Configured Rules** | [http://localhost:9090/rules](http://localhost:9090/rules) | - | 11 Live Evaluated Prometheus Recording Rules |
 | **Prometheus Targets Status** | [http://localhost:9090/targets](http://localhost:9090/targets) | - | Live Target Scraping Health (`app:8080`) |
 | **Grafana Dashboard** | [http://localhost:3000](http://localhost:3000) | `admin` / `admin` | Pre-configured Executive Dashboard |
 | **PostgreSQL Database** | `localhost:5432` | `postgres` / `postgres` | Database `kickbase` (Auto-migrated & Seeded) |

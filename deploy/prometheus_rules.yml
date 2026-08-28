@@ -1,0 +1,44 @@
+groups:
+  - name: kickbase_preconfigured_metrics
+    interval: 5s
+    rules:
+      # 1. Total Requests Rate per Minute
+      - record: kickbase:http_requests:rate1m
+        expr: sum by (path, method, status) (rate(http_requests_total[1m]))
+
+      # 2. Total Error Rate (4xx & 5xx)
+      - record: kickbase:http_errors:rate1m
+        expr: sum by (path, status) (rate(http_requests_total{status=~"[45].."}[1m]))
+
+      # 3. Overall Error Percentage Ratio (%)
+      - record: kickbase:http_errors:ratio_pct
+        expr: ((sum(http_requests_total{status=~"[45].."}) or vector(0)) / (sum(http_requests_total) or vector(1))) * 100
+
+      # 4. Response Latency (p95 Percentile)
+      - record: kickbase:latency:p95_seconds
+        expr: histogram_quantile(0.95, sum by (le, path) (rate(http_request_duration_seconds_bucket[1m])))
+
+      # 5. Average Latency per Endpoint
+      - record: kickbase:latency:avg_seconds
+        expr: sum by (path) (http_request_duration_seconds_sum) / sum by (path) (http_request_duration_seconds_count)
+
+      # 6. Memory Heap Usage in Megabytes (MB)
+      - record: kickbase:memory:heap_mb
+        expr: go_memstats_alloc_bytes{job="kickbase"} / 1024 / 1024
+
+      # 7. CPU Core Utilization (%)
+      - record: kickbase:cpu:percent
+        expr: rate(process_cpu_seconds_total{job="kickbase"}[1m]) * 100
+
+      # 8. Active Football Teams & Players
+      - record: kickbase:teams:total_gauge
+        expr: teams_total
+
+      - record: kickbase:players:total_gauge
+        expr: players_total
+
+      - record: kickbase:matches:total_gauge
+        expr: matches_total
+
+      - record: kickbase:matches:completed_gauge
+        expr: matches_completed_total
