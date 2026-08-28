@@ -151,3 +151,22 @@ func (r *CreateResultRequest) ToServiceInput() interfaces.CreateResultInput {
 type RevertRequest struct {
 	TargetVersion int `json:"target_version" binding:"required"`
 }
+
+// Auth DTOs
+
+type RegisterRequest struct {
+	Username string `json:"username" binding:"required,min=3,max=50"`
+	Password string `json:"password" binding:"required,min=6"`
+	Name     string `json:"name" binding:"required"`
+	Role     string `json:"role"`
+}
+
+type LoginRequest struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+type LoginResponse struct {
+	Token string      `json:"token"`
+	User  interface{} `json:"user"`
+}

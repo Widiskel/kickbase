@@ -46,6 +46,12 @@ type ReportService interface {
 	ListMatchReports(page, limit int) ([]MatchReport, int64, error)
 }
 
+// AuthService defines the interface for authentication & authorization business logic
+type AuthService interface {
+	Register(username, password, name, role string) (*domain.User, error)
+	Login(username, password string) (string, *domain.User, error)
+}
+
 // CreateResultInput represents the input for creating a match result
 type CreateResultInput struct {
 	MatchID   string      `json:"match_id"`

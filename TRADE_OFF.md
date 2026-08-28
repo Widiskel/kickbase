@@ -108,8 +108,8 @@ Playstyle menentukan gaya bermain pemain di lapangan. Setiap playstyle kompatibe
 
 | # | Asumsi | Alasan |
 |---|--------|--------|
-| 12 | Tidak ada autentikasi/otorisasi | Dokumen tidak mensyaratkan login/admin auth |
-| 13 | Semua endpoint bisa diakses publik | Karena tidak ada auth, API terbuka |
+| 12 | Autentikasi & Otorisasi menggunakan JWT Bearer Token dengan Role 'admin' | Dokumen menyebut "Admin perusahaan dapat...", mutasi data dilindungi role admin |
+| 13 | Endpoint pembacaan (GET teams, players, matches, reports) dapat diakses publik | Aplikasi Android dapat menampilkan info jadwal & report tanpa login wajib |
 | 14 | Database menggunakan PostgreSQL | Relational data dengan constraint ketat cocok untuk RDBMS |
 | 15 | Soft delete + audit trail via `_history` tables | Setiap entity punya tabel history untuk tracking perubahan dan revert |
 | 16 | Tidak ada pagination pada list pertandingan untuk report | Report bersifat agregasi, bukan list biasa |

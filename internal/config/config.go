@@ -13,6 +13,7 @@ type Config struct {
 	DBSSLMode  string
 	ServerPort string
 	LogLevel   string
+	JWTSecret  string
 }
 
 func Load() *Config {
@@ -25,6 +26,7 @@ func Load() *Config {
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 		ServerPort: getEnv("SERVER_PORT", "8080"),
 		LogLevel:   getEnv("LOG_LEVEL", "info"),
+		JWTSecret:  getEnv("JWT_SECRET", "kickbase-super-secret-jwt-key-2026"),
 	}
 }
 

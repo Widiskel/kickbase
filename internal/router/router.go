@@ -1,6 +1,7 @@
 package router
 
 import (
+	"kickbase/internal/config"
 	"kickbase/internal/handler"
 	"kickbase/internal/middleware"
 	"kickbase/internal/repository"
@@ -13,9 +14,10 @@ import (
 )
 
 func Setup(db *gorm.DB) *gin.Engine {
+	cfg := config.Load()
 	r := gin.Default()
 
-	// Middleware
+	// Global Middleware
 	r.Use(middleware.CORS())
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.Logger())
@@ -31,6 +33,7 @@ func Setup(db *gorm.DB) *gin.Engine {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Initialize repositories
+	userRepo := repository.NewUserRepository(db)
 	teamRepo := repository.NewTeamRepository(db)
 	playerRepo := repository.NewPlayerRepository(db)
 	matchRepo := repository.NewMatchRepository(db)
@@ -38,6 +41,7 @@ func Setup(db *gorm.DB) *gin.Engine {
 	goalRepo := repository.NewGoalRepository(db)
 
 	// Initialize services
+	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret)
 	teamSvc := service.NewTeamService(teamRepo)
 	playerSvc := service.NewPlayerService(playerRepo, teamRepo)
 	matchSvc := service.NewMatchService(matchRepo, teamRepo)
@@ -45,11 +49,16 @@ func Setup(db *gorm.DB) *gin.Engine {
 	reportSvc := service.NewReportService(db, matchRepo, resultRepo, goalRepo, teamRepo, playerRepo)
 
 	// Initialize handlers
+	authHandler := handler.NewAuthHandler(authSvc)
 	teamHandler := handler.NewTeamHandler(teamSvc)
 	playerHandler := handler.NewPlayerHandler(playerSvc)
 	matchHandler := handler.NewMatchHandler(matchSvc)
 	resultHandler := handler.NewResultHandler(resultSvc)
 	reportHandler := handler.NewReportHandler(reportSvc)
+
+	// Auth guards
+	authGuard := middleware.AuthMiddleware(cfg.JWTSecret)
+	adminGuard := middleware.RequireRole("admin")
 
 	// API routes
 	api := r.Group("/api")
@@ -59,49 +68,68 @@ func Setup(db *gorm.DB) *gin.Engine {
 			handler.RespondSuccess(c, gin.H{"status": "ok", "database": "connected"}, "Service is healthy")
 		})
 
+		// Auth
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", authHandler.Register)
+			auth.POST("/login", authHandler.Login)
+		}
+
 		// Teams
 		teams := api.Group("/teams")
 		{
-			teams.POST("", teamHandler.CreateTeam)
+			// Read operations (Public)
 			teams.GET("", teamHandler.ListTeams)
 			teams.GET("/:id", teamHandler.GetTeam)
-			teams.PUT("/:id", teamHandler.UpdateTeam)
-			teams.DELETE("/:id", teamHandler.DeleteTeam)
 			teams.GET("/:id/history", teamHandler.GetTeamHistory)
-			teams.POST("/:id/revert", teamHandler.RevertTeam)
+
+			// Admin operations (Protected)
+			teams.POST("", authGuard, adminGuard, teamHandler.CreateTeam)
+			teams.PUT("/:id", authGuard, adminGuard, teamHandler.UpdateTeam)
+			teams.DELETE("/:id", authGuard, adminGuard, teamHandler.DeleteTeam)
+			teams.POST("/:id/revert", authGuard, adminGuard, teamHandler.RevertTeam)
 		}
 
 		// Players
 		players := api.Group("/players")
 		{
-			players.POST("", playerHandler.CreatePlayer)
+			// Read operations (Public)
 			players.GET("", playerHandler.ListPlayers)
 			players.GET("/:id", playerHandler.GetPlayer)
-			players.PUT("/:id", playerHandler.UpdatePlayer)
-			players.DELETE("/:id", playerHandler.DeletePlayer)
 			players.GET("/:id/history", playerHandler.GetPlayerHistory)
-			players.POST("/:id/revert", playerHandler.RevertPlayer)
+
+			// Admin operations (Protected)
+			players.POST("", authGuard, adminGuard, playerHandler.CreatePlayer)
+			players.PUT("/:id", authGuard, adminGuard, playerHandler.UpdatePlayer)
+			players.DELETE("/:id", authGuard, adminGuard, playerHandler.DeletePlayer)
+			players.POST("/:id/revert", authGuard, adminGuard, playerHandler.RevertPlayer)
 		}
 
 		// Matches
 		matches := api.Group("/matches")
 		{
-			matches.POST("", matchHandler.CreateMatch)
+			// Read operations (Public)
 			matches.GET("", matchHandler.ListMatches)
 			matches.GET("/:id", matchHandler.GetMatch)
-			matches.PATCH("/:id/status", matchHandler.UpdateMatchStatus)
 			matches.GET("/:id/history", matchHandler.GetMatchHistory)
-			matches.POST("/:id/revert", matchHandler.RevertMatch)
+
+			// Admin operations (Protected)
+			matches.POST("", authGuard, adminGuard, matchHandler.CreateMatch)
+			matches.PATCH("/:id/status", authGuard, adminGuard, matchHandler.UpdateMatchStatus)
+			matches.POST("/:id/revert", authGuard, adminGuard, matchHandler.RevertMatch)
 		}
 
 		// Results
 		results := api.Group("/results")
 		{
-			results.POST("", resultHandler.CreateMatchResult)
+			// Read operations (Public)
 			results.GET("/:matchId", resultHandler.GetMatchResult)
+
+			// Admin operations (Protected)
+			results.POST("", authGuard, adminGuard, resultHandler.CreateMatchResult)
 		}
 
-		// Reports
+		// Reports (Public read-only aggregations)
 		reports := api.Group("/reports")
 		{
 			reports.GET("/matches", reportHandler.ListMatchReports)

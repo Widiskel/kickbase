@@ -54,3 +54,10 @@ type GoalRepository interface {
 	Create(goal *domain.Goal) error
 	ListByMatchResult(resultID string) ([]domain.Goal, error)
 }
+
+// UserRepository defines the interface for user data access
+type UserRepository interface {
+	Create(user *domain.User) error
+	FindByUsername(username string) (*domain.User, error)
+	FindByID(id string) (*domain.User, error)
+}
