@@ -19,6 +19,40 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/api/matches": {
+            "get": {
+                "description": "Get a paginated list of all matches",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Matches"
+                ],
+                "summary": "List all matches",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.PaginatedResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Create a match schedule between two teams",
                 "consumes": [
@@ -38,7 +72,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/kickbase_internal_domain.Match"
+                            "$ref": "#/definitions/internal_handler.CreateMatchRequest"
                         }
                     }
                 ],
@@ -58,7 +92,223 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/matches/{id}": {
+            "get": {
+                "description": "Get a single match by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Matches"
+                ],
+                "summary": "Get a match by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Match ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SuccessResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/matches/{id}/history": {
+            "get": {
+                "description": "Get the version history of a match",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Matches"
+                ],
+                "summary": "Get match history",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Match ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SuccessResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/matches/{id}/revert": {
+            "post": {
+                "description": "Revert a match to a specific previous version",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Matches"
+                ],
+                "summary": "Revert match to previous version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Match ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Target version",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.RevertRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/matches/{id}/status": {
+            "patch": {
+                "description": "Update the status of a match (scheduled, completed, cancelled, deferred)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Matches"
+                ],
+                "summary": "Update match status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Match ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New status",
+                        "name": "status",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.UpdateMatchStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/players": {
+            "get": {
+                "description": "Get a paginated list of players, optionally filtered by team",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "List all players",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by team ID",
+                        "name": "team_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.PaginatedResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Add a new player to a team",
                 "consumes": [
@@ -78,7 +328,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/kickbase_internal_domain.Player"
+                            "$ref": "#/definitions/internal_handler.CreatePlayerRequest"
                         }
                     }
                 ],
@@ -97,6 +347,216 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/players/{id}": {
+            "get": {
+                "description": "Get a single player by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Get a player by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SuccessResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing player's information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Update a player",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Player data with version",
+                        "name": "player",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.UpdatePlayerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Soft delete a player (only if no goal records)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Delete a player",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/players/{id}/history": {
+            "get": {
+                "description": "Get the version history of a player",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Get player history",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SuccessResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/players/{id}/revert": {
+            "post": {
+                "description": "Revert a player to a specific previous version",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Revert player to previous version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Target version",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.RevertRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }
@@ -195,7 +655,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/internal_handler.CreateResultRequest"
                         }
                     }
                 ],
@@ -220,6 +680,47 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/results/{matchId}": {
+            "get": {
+                "description": "Get the result of a specific match",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Results"
+                ],
+                "summary": "Get match result",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Match ID",
+                        "name": "matchId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }
@@ -281,7 +782,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/kickbase_internal_domain.Team"
+                            "$ref": "#/definitions/internal_handler.CreateTeamRequest"
                         }
                     }
                 ],
@@ -367,7 +868,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/kickbase_internal_domain.Team"
+                            "$ref": "#/definitions/internal_handler.UpdateTeamRequest"
                         }
                     }
                 ],
@@ -434,18 +935,197 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/teams/{id}/history": {
+            "get": {
+                "description": "Get the version history of a team",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "Get team history",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SuccessResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teams/{id}/revert": {
+            "post": {
+                "description": "Revert a team to a specific previous version",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "Revert team to previous version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Target version",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.RevertRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "gorm.DeletedAt": {
+        "internal_handler.CreateMatchRequest": {
             "type": "object",
+            "required": [
+                "away_team_id",
+                "home_team_id",
+                "match_date",
+                "match_time"
+            ],
             "properties": {
-                "time": {
+                "away_team_id": {
                     "type": "string"
                 },
-                "valid": {
-                    "description": "Valid is true if Time is not NULL",
-                    "type": "boolean"
+                "home_team_id": {
+                    "type": "string"
+                },
+                "match_date": {
+                    "type": "string"
+                },
+                "match_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.CreatePlayerRequest": {
+            "type": "object",
+            "required": [
+                "height",
+                "jersey_number",
+                "name",
+                "position",
+                "team_id",
+                "weight"
+            ],
+            "properties": {
+                "height": {
+                    "type": "number"
+                },
+                "jersey_number": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "playstyle": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string"
+                },
+                "team_id": {
+                    "type": "string"
+                },
+                "weight": {
+                    "type": "number"
+                }
+            }
+        },
+        "internal_handler.CreateResultRequest": {
+            "type": "object",
+            "required": [
+                "match_id"
+            ],
+            "properties": {
+                "away_score": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "goals": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_handler.GoalInput"
+                    }
+                },
+                "home_score": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "match_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.CreateTeamRequest": {
+            "type": "object",
+            "required": [
+                "address",
+                "city",
+                "founded_year",
+                "name"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "founded_year": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "logo_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
@@ -472,6 +1152,21 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_handler.GoalInput": {
+            "type": "object",
+            "required": [
+                "goal_time",
+                "player_id"
+            ],
+            "properties": {
+                "goal_time": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_handler.PaginatedResponse": {
             "type": "object",
             "properties": {
@@ -490,6 +1185,17 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_handler.RevertRequest": {
+            "type": "object",
+            "required": [
+                "target_version"
+            ],
+            "properties": {
+                "target_version": {
+                    "type": "integer"
+                }
+            }
+        },
         "internal_handler.SuccessResponse": {
             "type": "object",
             "properties": {
@@ -502,31 +1208,14 @@ const docTemplate = `{
                 }
             }
         },
-        "kickbase_internal_domain.Match": {
+        "internal_handler.UpdateMatchStatusRequest": {
             "type": "object",
+            "required": [
+                "status",
+                "version"
+            ],
             "properties": {
-                "away_team_id": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "home_team_id": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "match_date": {
-                    "type": "string"
-                },
-                "match_time": {
-                    "type": "string"
-                },
                 "status": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 },
                 "version": {
@@ -534,20 +1223,19 @@ const docTemplate = `{
                 }
             }
         },
-        "kickbase_internal_domain.Player": {
+        "internal_handler.UpdatePlayerRequest": {
             "type": "object",
+            "required": [
+                "height",
+                "jersey_number",
+                "name",
+                "position",
+                "version",
+                "weight"
+            ],
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "$ref": "#/definitions/gorm.DeletedAt"
-                },
                 "height": {
                     "type": "number"
-                },
-                "id": {
-                    "type": "string"
                 },
                 "jersey_number": {
                     "type": "integer"
@@ -561,12 +1249,6 @@ const docTemplate = `{
                 "position": {
                     "type": "string"
                 },
-                "team_id": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
                 "version": {
                     "type": "integer"
                 },
@@ -575,8 +1257,11 @@ const docTemplate = `{
                 }
             }
         },
-        "kickbase_internal_domain.Team": {
+        "internal_handler.UpdateTeamRequest": {
             "type": "object",
+            "required": [
+                "version"
+            ],
             "properties": {
                 "address": {
                     "type": "string"
@@ -584,25 +1269,13 @@ const docTemplate = `{
                 "city": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "$ref": "#/definitions/gorm.DeletedAt"
-                },
                 "founded_year": {
                     "type": "integer"
-                },
-                "id": {
-                    "type": "string"
                 },
                 "logo_url": {
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 },
                 "version": {

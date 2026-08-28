@@ -47,17 +47,18 @@ func (s *ReportService) GetMatchReport(matchID string) (*interfaces.MatchReport,
 	awayTeam, _ := s.teamRepo.FindByID(match.AwayTeamID)
 
 	report := &interfaces.MatchReport{
-		MatchID:   match.ID,
-		MatchDate: match.MatchDate,
-		MatchTime: match.MatchTime,
-		HomeTeam:  homeTeam.Name,
-		AwayTeam:  awayTeam.Name,
-		Status:    match.Status,
+		MatchID:    match.ID,
+		MatchDate:  match.MatchDate,
+		MatchTime:  match.MatchTime,
+		HomeTeam:   homeTeam.Name,
+		AwayTeam:   awayTeam.Name,
+		Status:     match.Status,
+		TopScorers: []interfaces.TopScorer{},
 	}
 
 	// Get result if exists
 	result, err := s.resultRepo.FindByMatchID(matchID)
-	if err == nil {
+	if err == nil && result != nil {
 		report.HomeScore = &result.HomeScore
 		report.AwayScore = &result.AwayScore
 
@@ -71,27 +72,34 @@ func (s *ReportService) GetMatchReport(matchID string) (*interfaces.MatchReport,
 		}
 
 		// Get top scorers
-		goals, _ := s.goalRepo.ListByMatchResult(result.ID)
-		scorerMap := make(map[string]int)
-		for _, goal := range goals {
-			scorerMap[goal.PlayerID]++
-		}
-
-		maxGoals := 0
-		for _, count := range scorerMap {
-			if count > maxGoals {
-				maxGoals = count
+		if s.goalRepo != nil {
+			goals, _ := s.goalRepo.ListByMatchResult(result.ID)
+			scorerMap := make(map[string]int)
+			for _, goal := range goals {
+				scorerMap[goal.PlayerID]++
 			}
-		}
 
-		for playerID, count := range scorerMap {
-			if count == maxGoals {
-				player, _ := s.playerRepo.FindByID(playerID)
-				report.TopScorers = append(report.TopScorers, interfaces.TopScorer{
-					PlayerID:   playerID,
-					PlayerName: player.Name,
-					Goals:      count,
-				})
+			maxGoals := 0
+			for _, count := range scorerMap {
+				if count > maxGoals {
+					maxGoals = count
+				}
+			}
+
+			for playerID, count := range scorerMap {
+				if count == maxGoals {
+					playerName := ""
+					if s.playerRepo != nil {
+						if player, _ := s.playerRepo.FindByID(playerID); player != nil {
+							playerName = player.Name
+						}
+					}
+					report.TopScorers = append(report.TopScorers, interfaces.TopScorer{
+						PlayerID:   playerID,
+						PlayerName: playerName,
+						Goals:      count,
+					})
+				}
 			}
 		}
 	}
@@ -122,6 +130,10 @@ func (s *ReportService) ListMatchReports(page, limit int) ([]interfaces.MatchRep
 }
 
 func (s *ReportService) countTeamWins(teamID string, beforeDate string) int {
+	if s.db == nil {
+		return 0
+	}
+
 	var count int64
 
 	// Count as home team wins

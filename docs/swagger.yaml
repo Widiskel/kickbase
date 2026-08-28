@@ -1,12 +1,80 @@
 basePath: /
 definitions:
-  gorm.DeletedAt:
+  internal_handler.CreateMatchRequest:
     properties:
-      time:
+      away_team_id:
         type: string
-      valid:
-        description: Valid is true if Time is not NULL
-        type: boolean
+      home_team_id:
+        type: string
+      match_date:
+        type: string
+      match_time:
+        type: string
+    required:
+    - away_team_id
+    - home_team_id
+    - match_date
+    - match_time
+    type: object
+  internal_handler.CreatePlayerRequest:
+    properties:
+      height:
+        type: number
+      jersey_number:
+        type: integer
+      name:
+        type: string
+      playstyle:
+        type: string
+      position:
+        type: string
+      team_id:
+        type: string
+      weight:
+        type: number
+    required:
+    - height
+    - jersey_number
+    - name
+    - position
+    - team_id
+    - weight
+    type: object
+  internal_handler.CreateResultRequest:
+    properties:
+      away_score:
+        minimum: 0
+        type: integer
+      goals:
+        items:
+          $ref: '#/definitions/internal_handler.GoalInput'
+        type: array
+      home_score:
+        minimum: 0
+        type: integer
+      match_id:
+        type: string
+    required:
+    - match_id
+    type: object
+  internal_handler.CreateTeamRequest:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      founded_year:
+        minimum: 1
+        type: integer
+      logo_url:
+        type: string
+      name:
+        type: string
+    required:
+    - address
+    - city
+    - founded_year
+    - name
     type: object
   internal_handler.ErrorDetail:
     properties:
@@ -23,6 +91,16 @@ definitions:
       success:
         type: boolean
     type: object
+  internal_handler.GoalInput:
+    properties:
+      goal_time:
+        type: string
+      player_id:
+        type: string
+    required:
+    - goal_time
+    - player_id
+    type: object
   internal_handler.PaginatedResponse:
     properties:
       data: {}
@@ -35,6 +113,13 @@ definitions:
       total:
         type: integer
     type: object
+  internal_handler.RevertRequest:
+    properties:
+      target_version:
+        type: integer
+    required:
+    - target_version
+    type: object
   internal_handler.SuccessResponse:
     properties:
       data: {}
@@ -43,37 +128,20 @@ definitions:
       success:
         type: boolean
     type: object
-  kickbase_internal_domain.Match:
+  internal_handler.UpdateMatchStatusRequest:
     properties:
-      away_team_id:
-        type: string
-      created_at:
-        type: string
-      home_team_id:
-        type: string
-      id:
-        type: string
-      match_date:
-        type: string
-      match_time:
-        type: string
       status:
-        type: string
-      updated_at:
         type: string
       version:
         type: integer
+    required:
+    - status
+    - version
     type: object
-  kickbase_internal_domain.Player:
+  internal_handler.UpdatePlayerRequest:
     properties:
-      created_at:
-        type: string
-      deleted_at:
-        $ref: '#/definitions/gorm.DeletedAt'
       height:
         type: number
-      id:
-        type: string
       jersey_number:
         type: integer
       name:
@@ -82,37 +150,34 @@ definitions:
         type: string
       position:
         type: string
-      team_id:
-        type: string
-      updated_at:
-        type: string
       version:
         type: integer
       weight:
         type: number
+    required:
+    - height
+    - jersey_number
+    - name
+    - position
+    - version
+    - weight
     type: object
-  kickbase_internal_domain.Team:
+  internal_handler.UpdateTeamRequest:
     properties:
       address:
         type: string
       city:
         type: string
-      created_at:
-        type: string
-      deleted_at:
-        $ref: '#/definitions/gorm.DeletedAt'
       founded_year:
         type: integer
-      id:
-        type: string
       logo_url:
         type: string
       name:
         type: string
-      updated_at:
-        type: string
       version:
         type: integer
+    required:
+    - version
     type: object
 host: localhost:8080
 info:
@@ -123,6 +188,29 @@ info:
   version: "1.0"
 paths:
   /api/matches:
+    get:
+      description: Get a paginated list of all matches
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.PaginatedResponse'
+      summary: List all matches
+      tags:
+      - Matches
     post:
       consumes:
       - application/json
@@ -133,7 +221,7 @@ paths:
         name: match
         required: true
         schema:
-          $ref: '#/definitions/kickbase_internal_domain.Match'
+          $ref: '#/definitions/internal_handler.CreateMatchRequest'
       produces:
       - application/json
       responses:
@@ -148,7 +236,151 @@ paths:
       summary: Schedule a new match
       tags:
       - Matches
+  /api/matches/{id}:
+    get:
+      description: Get a single match by its ID
+      parameters:
+      - description: Match ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Get a match by ID
+      tags:
+      - Matches
+  /api/matches/{id}/history:
+    get:
+      description: Get the version history of a match
+      parameters:
+      - description: Match ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+      summary: Get match history
+      tags:
+      - Matches
+  /api/matches/{id}/revert:
+    post:
+      consumes:
+      - application/json
+      description: Revert a match to a specific previous version
+      parameters:
+      - description: Match ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Target version
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.RevertRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Revert match to previous version
+      tags:
+      - Matches
+  /api/matches/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update the status of a match (scheduled, completed, cancelled,
+        deferred)
+      parameters:
+      - description: Match ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New status
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.UpdateMatchStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Update match status
+      tags:
+      - Matches
   /api/players:
+    get:
+      description: Get a paginated list of players, optionally filtered by team
+      parameters:
+      - description: Filter by team ID
+        in: query
+        name: team_id
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.PaginatedResponse'
+      summary: List all players
+      tags:
+      - Players
     post:
       consumes:
       - application/json
@@ -159,7 +391,7 @@ paths:
         name: player
         required: true
         schema:
-          $ref: '#/definitions/kickbase_internal_domain.Player'
+          $ref: '#/definitions/internal_handler.CreatePlayerRequest'
       produces:
       - application/json
       responses:
@@ -176,6 +408,145 @@ paths:
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
       summary: Create a new player
+      tags:
+      - Players
+  /api/players/{id}:
+    delete:
+      description: Soft delete a player (only if no goal records)
+      parameters:
+      - description: Player ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Delete a player
+      tags:
+      - Players
+    get:
+      description: Get a single player by its ID
+      parameters:
+      - description: Player ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Get a player by ID
+      tags:
+      - Players
+    put:
+      consumes:
+      - application/json
+      description: Update an existing player's information
+      parameters:
+      - description: Player ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Player data with version
+        in: body
+        name: player
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.UpdatePlayerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Update a player
+      tags:
+      - Players
+  /api/players/{id}/history:
+    get:
+      description: Get the version history of a player
+      parameters:
+      - description: Player ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+      summary: Get player history
+      tags:
+      - Players
+  /api/players/{id}/revert:
+    post:
+      consumes:
+      - application/json
+      description: Revert a player to a specific previous version
+      parameters:
+      - description: Player ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Target version
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.RevertRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Revert player to previous version
       tags:
       - Players
   /api/reports/matches:
@@ -237,7 +608,7 @@ paths:
         name: result
         required: true
         schema:
-          type: object
+          $ref: '#/definitions/internal_handler.CreateResultRequest'
       produces:
       - application/json
       responses:
@@ -258,6 +629,33 @@ paths:
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
       summary: Report match result
+      tags:
+      - Results
+  /api/results/{matchId}:
+    get:
+      description: Get the result of a specific match
+      parameters:
+      - description: Match ID
+        in: query
+        name: matchId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Get match result
       tags:
       - Results
   /api/teams:
@@ -294,7 +692,7 @@ paths:
         name: team
         required: true
         schema:
-          $ref: '#/definitions/kickbase_internal_domain.Team'
+          $ref: '#/definitions/internal_handler.CreateTeamRequest'
       produces:
       - application/json
       responses:
@@ -375,7 +773,7 @@ paths:
         name: team
         required: true
         schema:
-          $ref: '#/definitions/kickbase_internal_domain.Team'
+          $ref: '#/definitions/internal_handler.UpdateTeamRequest'
       produces:
       - application/json
       responses:
@@ -396,6 +794,60 @@ paths:
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
       summary: Update a team
+      tags:
+      - Teams
+  /api/teams/{id}/history:
+    get:
+      description: Get the version history of a team
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+      summary: Get team history
+      tags:
+      - Teams
+  /api/teams/{id}/revert:
+    post:
+      consumes:
+      - application/json
+      description: Revert a team to a specific previous version
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Target version
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.RevertRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Revert team to previous version
       tags:
       - Teams
 produces:
