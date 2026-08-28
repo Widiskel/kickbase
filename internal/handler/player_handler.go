@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"kickbase/internal/interfaces"
 
@@ -67,14 +66,7 @@ func (h *PlayerHandler) CreatePlayer(c *gin.Context) {
 // @Router /api/players [get]
 func (h *PlayerHandler) ListPlayers(c *gin.Context) {
 	teamID := c.Query("team_id")
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
+	page, limit := GetPagination(c)
 
 	if teamID != "" {
 		players, total, err := h.playerService.ListPlayersByTeam(teamID, page, limit)

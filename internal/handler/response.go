@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -69,4 +70,17 @@ func RespondPaginated(c *gin.Context, data interface{}, total int64, page, limit
 		Page:    page,
 		Limit:   limit,
 	})
+}
+
+// GetPagination parses and validates page and limit query parameters
+func GetPagination(c *gin.Context) (int, int) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	return page, limit
 }

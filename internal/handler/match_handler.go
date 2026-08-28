@@ -2,7 +2,7 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
+	"strings"
 
 	"kickbase/internal/interfaces"
 
@@ -62,14 +62,7 @@ func (h *MatchHandler) CreateMatch(c *gin.Context) {
 // @Success 200 {object} PaginatedResponse
 // @Router /api/matches [get]
 func (h *MatchHandler) ListMatches(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
+	page, limit := GetPagination(c)
 
 	matches, total, err := h.matchService.ListMatches(page, limit)
 	if err != nil {
@@ -128,7 +121,7 @@ func (h *MatchHandler) UpdateMatchStatus(c *gin.Context) {
 		case "match not found":
 			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
 		default:
-			if contains(err.Error(), "invalid status transition") {
+			if strings.Contains(err.Error(), "invalid status transition") {
 				RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 			} else {
 				RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to update match status", nil)
@@ -192,8 +185,4 @@ func (h *MatchHandler) RevertMatch(c *gin.Context) {
 	}
 
 	RespondSuccess(c, nil, "Match reverted successfully")
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || (len(s) > 0 && (s[:len(substr)] == substr || contains(s[1:], substr))))
 }

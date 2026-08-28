@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"kickbase/internal/interfaces"
 
@@ -60,14 +59,7 @@ func (h *TeamHandler) CreateTeam(c *gin.Context) {
 // @Success 200 {object} PaginatedResponse
 // @Router /api/teams [get]
 func (h *TeamHandler) ListTeams(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
+	page, limit := GetPagination(c)
 
 	teams, total, err := h.teamService.ListTeams(page, limit)
 	if err != nil {

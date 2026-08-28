@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"kickbase/internal/interfaces"
 
@@ -29,14 +28,7 @@ func NewReportHandler(reportService interfaces.ReportService) *ReportHandler {
 // @Success 200 {object} PaginatedResponse
 // @Router /api/reports/matches [get]
 func (h *ReportHandler) ListMatchReports(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
+	page, limit := GetPagination(c)
 
 	reports, total, err := h.reportService.ListMatchReports(page, limit)
 	if err != nil {

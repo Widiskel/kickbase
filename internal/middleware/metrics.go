@@ -21,9 +21,6 @@ func PrometheusMetrics() gin.HandlerFunc {
 		duration := time.Since(start).Seconds()
 		requestCount++
 		requestDuration += duration
-
-		// Store metrics for the /metrics endpoint
-		c.Set("metric_duration", duration)
 	}
 }
 

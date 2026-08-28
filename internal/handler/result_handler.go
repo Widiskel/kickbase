@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"kickbase/internal/interfaces"
 
@@ -46,7 +47,7 @@ func (h *ResultHandler) CreateMatchResult(c *gin.Context) {
 		case "match is not in scheduled status", "match result already exists":
 			RespondError(c, http.StatusConflict, "CONFLICT", err.Error(), nil)
 		default:
-			if contains(err.Error(), "does not belong to either team") || contains(err.Error(), "player") {
+			if strings.Contains(err.Error(), "does not belong to either team") || strings.Contains(err.Error(), "player") {
 				RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 			} else {
 				RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create result", nil)
