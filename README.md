@@ -118,11 +118,14 @@ go run cmd/server/main.go
 | Service | Local URL | Default Credentials | Description |
 |---|---|---|---|
 | **API Server** | [http://localhost:8080](http://localhost:8080) | - | Kickbase REST API Server |
-| **Interactive Swagger UI** | [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html) | Bearer Token (See below) | OpenAPI 2.0 Web Interface |
-| **API Health Check** | [http://localhost:8080/api/health](http://localhost:8080/api/health) | - | Live DB & Service health |
-| **Prometheus Live Metrics** | [http://localhost:8080/metrics](http://localhost:8080/metrics) | - | Prometheus exposition endpoint |
-| **Prometheus Server** | [http://localhost:9090](http://localhost:9090) | - | Target scraping & metrics query |
-| **Grafana Dashboard** | [http://localhost:3000](http://localhost:3000) | `admin` / `admin` | Pre-configured metrics visualizer |
+| **Interactive Swagger UI** | [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html) | Bearer Token (See below) | OpenAPI 2.0 Interactive Testing |
+| **OpenAPI Spec (JSON)** | [http://localhost:8080/swagger/doc.json](http://localhost:8080/swagger/doc.json) | - | Raw OpenAPI 2.0 JSON Specification |
+| **API Health Check** | [http://localhost:8080/api/health](http://localhost:8080/api/health) | - | Live DB & App Connectivity Health |
+| **Prometheus Metrics** | [http://localhost:8080/metrics](http://localhost:8080/metrics) | - | Prometheus Raw Text Exposition Endpoint |
+| **Prometheus Server UI** | [http://localhost:9090](http://localhost:9090) | - | PromQL Query & Metric Graphing |
+| **Prometheus Targets Status** | [http://localhost:9090/targets](http://localhost:9090/targets) | - | Live Target Scraping Health (`app:8080`) |
+| **Grafana Dashboard** | [http://localhost:3000](http://localhost:3000) | `admin` / `admin` | Pre-configured Executive Dashboard |
+| **PostgreSQL Database** | `localhost:5432` | `postgres` / `postgres` | Database `kickbase` (Auto-migrated & Seeded) |
 
 ---
 
