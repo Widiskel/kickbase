@@ -327,11 +327,11 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: Filter by team ID (home or away)
+      - description: Filter by team ID (supports OP:VAL e.g. EQ:uuid, IN:uuid1,uuid2)
         in: query
         name: team_id
         type: string
-      - description: Filter by match status (scheduled, completed, cancelled, deferred)
+      - description: Filter by match status (supports OP:VAL e.g. EQ:scheduled, IN:scheduled,deferred)
         in: query
         name: status
         type: string
@@ -342,6 +342,10 @@ paths:
       - description: Filter matches to date (YYYY-MM-DD)
         in: query
         name: date_to
+        type: string
+      - description: Filter match date (supports OP:VAL e.g. EQ:2026-09-01, BT:2026-09-01,2026-09-30)
+        in: query
+        name: match_date
         type: string
       - default: match_date
         description: Sort field (match_date, created_at)
@@ -544,17 +548,30 @@ paths:
       description: Get a paginated list of players with optional team, position, name
         filtering and sorting
       parameters:
-      - description: Filter by team ID
+      - description: Filter by team ID (supports OP:VAL e.g. EQ:uuid, IN:uuid1,uuid2)
         in: query
         name: team_id
         type: string
-      - description: Filter by position (e.g. CF, LWF, CB, GK)
+      - description: Filter by position (supports OP:VAL e.g. EQ:CF, IN:CF,SS,LWF,
+          NI:GK)
         in: query
         name: position
         type: string
-      - description: Filter by player name (case-insensitive)
+      - description: Filter by player name (supports OP:VAL e.g. CT:Bambang)
         in: query
         name: name
+        type: string
+      - description: Filter by height in cm (supports OP:VAL e.g. GT:180, BT:170,185)
+        in: query
+        name: height
+        type: string
+      - description: Filter by weight in kg (supports OP:VAL e.g. LT:75, GTE:70)
+        in: query
+        name: weight
+        type: string
+      - description: Filter by jersey number (supports OP:VAL e.g. EQ:10, LT:20)
+        in: query
+        name: jersey_number
         type: string
       - default: created_at
         description: Sort field (name, jersey_number, height, weight, created_at)
@@ -951,13 +968,17 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: Filter by team name (case-insensitive)
+      - description: Filter by team name (supports OP:VAL e.g. CT:Pers, EQ:Persija)
         in: query
         name: name
         type: string
-      - description: Filter by city
+      - description: Filter by city (supports OP:VAL e.g. EQ:Jakarta, IN:Jakarta,Bandung)
         in: query
         name: city
+        type: string
+      - description: Filter by founded year (supports OP:VAL e.g. GT:1930, BT:1920,1980)
+        in: query
+        name: founded_year
         type: string
       - default: created_at
         description: Sort field (name, founded_year, city, created_at)

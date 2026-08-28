@@ -60,8 +60,9 @@ func (h *TeamHandler) CreateTeam(c *gin.Context) {
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
-// @Param name query string false "Filter by team name (case-insensitive)"
-// @Param city query string false "Filter by city"
+// @Param name query string false "Filter by team name (supports OP:VAL e.g. CT:Pers, EQ:Persija)"
+// @Param city query string false "Filter by city (supports OP:VAL e.g. EQ:Jakarta, IN:Jakarta,Bandung)"
+// @Param founded_year query string false "Filter by founded year (supports OP:VAL e.g. GT:1930, BT:1920,1980)"
 // @Param sort_by query string false "Sort field (name, founded_year, city, created_at)" default(created_at)
 // @Param order query string false "Sort order (asc, desc)" default(desc)
 // @Success 200 {object} PaginatedResponse
@@ -70,12 +71,13 @@ func (h *TeamHandler) ListTeams(c *gin.Context) {
 	page, limit := GetPagination(c)
 
 	opts := interfaces.TeamFilterOptions{
-		Page:    page,
-		Limit:   limit,
-		Name:    c.Query("name"),
-		City:    c.Query("city"),
-		SortBy:  c.Query("sort_by"),
-		Order:   c.Query("order"),
+		Page:        page,
+		Limit:       limit,
+		Name:        c.Query("name"),
+		City:        c.Query("city"),
+		FoundedYear: c.Query("founded_year"),
+		SortBy:      c.Query("sort_by"),
+		Order:       c.Query("order"),
 	}
 
 	teams, total, err := h.teamService.ListTeams(opts)

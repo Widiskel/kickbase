@@ -183,13 +183,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by team ID (home or away)",
+                        "description": "Filter by team ID (supports OP:VAL e.g. EQ:uuid, IN:uuid1,uuid2)",
                         "name": "team_id",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by match status (scheduled, completed, cancelled, deferred)",
+                        "description": "Filter by match status (supports OP:VAL e.g. EQ:scheduled, IN:scheduled,deferred)",
                         "name": "status",
                         "in": "query"
                     },
@@ -203,6 +203,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Filter matches to date (YYYY-MM-DD)",
                         "name": "date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter match date (supports OP:VAL e.g. EQ:2026-09-01, BT:2026-09-01,2026-09-30)",
+                        "name": "match_date",
                         "in": "query"
                     },
                     {
@@ -514,20 +520,38 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Filter by team ID",
+                        "description": "Filter by team ID (supports OP:VAL e.g. EQ:uuid, IN:uuid1,uuid2)",
                         "name": "team_id",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by position (e.g. CF, LWF, CB, GK)",
+                        "description": "Filter by position (supports OP:VAL e.g. EQ:CF, IN:CF,SS,LWF, NI:GK)",
                         "name": "position",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by player name (case-insensitive)",
+                        "description": "Filter by player name (supports OP:VAL e.g. CT:Bambang)",
                         "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by height in cm (supports OP:VAL e.g. GT:180, BT:170,185)",
+                        "name": "height",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by weight in kg (supports OP:VAL e.g. LT:75, GTE:70)",
+                        "name": "weight",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by jersey number (supports OP:VAL e.g. EQ:10, LT:20)",
+                        "name": "jersey_number",
                         "in": "query"
                     },
                     {
@@ -1131,14 +1155,20 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by team name (case-insensitive)",
+                        "description": "Filter by team name (supports OP:VAL e.g. CT:Pers, EQ:Persija)",
                         "name": "name",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by city",
+                        "description": "Filter by city (supports OP:VAL e.g. EQ:Jakarta, IN:Jakarta,Bandung)",
                         "name": "city",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by founded year (supports OP:VAL e.g. GT:1930, BT:1920,1980)",
+                        "name": "founded_year",
                         "in": "query"
                     },
                     {

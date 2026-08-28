@@ -4,35 +4,40 @@ import "kickbase/internal/domain"
 
 // TeamFilterOptions defines filters and sorting for listing teams
 type TeamFilterOptions struct {
-	Name    string
-	City    string
-	SortBy  string
-	Order   string
-	Page    int
-	Limit   int
+	Name        string
+	City        string
+	FoundedYear string
+	SortBy      string
+	Order       string
+	Page        int
+	Limit       int
 }
 
 // PlayerFilterOptions defines filters and sorting for listing players
 type PlayerFilterOptions struct {
-	TeamID   string
-	Name     string
-	Position string
-	SortBy   string
-	Order    string
-	Page     int
-	Limit    int
+	TeamID       string
+	Name         string
+	Position     string
+	Height       string
+	Weight       string
+	JerseyNumber string
+	SortBy       string
+	Order        string
+	Page         int
+	Limit        int
 }
 
 // MatchFilterOptions defines filters and sorting for listing matches
 type MatchFilterOptions struct {
-	TeamID   string
-	Status   string
-	DateFrom string
-	DateTo   string
-	SortBy   string
-	Order    string
-	Page     int
-	Limit    int
+	TeamID    string
+	Status    string
+	DateFrom  string
+	DateTo    string
+	MatchDate string
+	SortBy    string
+	Order     string
+	Page      int
+	Limit     int
 }
 
 // ReportFilterOptions defines filters and sorting for listing match reports

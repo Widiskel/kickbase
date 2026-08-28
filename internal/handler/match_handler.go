@@ -61,10 +61,11 @@ func (h *MatchHandler) CreateMatch(c *gin.Context) {
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
-// @Param team_id query string false "Filter by team ID (home or away)"
-// @Param status query string false "Filter by match status (scheduled, completed, cancelled, deferred)"
+// @Param team_id query string false "Filter by team ID (supports OP:VAL e.g. EQ:uuid, IN:uuid1,uuid2)"
+// @Param status query string false "Filter by match status (supports OP:VAL e.g. EQ:scheduled, IN:scheduled,deferred)"
 // @Param date_from query string false "Filter matches from date (YYYY-MM-DD)"
 // @Param date_to query string false "Filter matches to date (YYYY-MM-DD)"
+// @Param match_date query string false "Filter match date (supports OP:VAL e.g. EQ:2026-09-01, BT:2026-09-01,2026-09-30)"
 // @Param sort_by query string false "Sort field (match_date, created_at)" default(match_date)
 // @Param order query string false "Sort order (asc, desc)" default(desc)
 // @Success 200 {object} PaginatedResponse
@@ -73,14 +74,15 @@ func (h *MatchHandler) ListMatches(c *gin.Context) {
 	page, limit := GetPagination(c)
 
 	opts := interfaces.MatchFilterOptions{
-		Page:     page,
-		Limit:    limit,
-		TeamID:   c.Query("team_id"),
-		Status:   c.Query("status"),
-		DateFrom: c.Query("date_from"),
-		DateTo:   c.Query("date_to"),
-		SortBy:   c.Query("sort_by"),
-		Order:    c.Query("order"),
+		Page:      page,
+		Limit:     limit,
+		TeamID:    c.Query("team_id"),
+		Status:    c.Query("status"),
+		DateFrom:  c.Query("date_from"),
+		DateTo:    c.Query("date_to"),
+		MatchDate: c.Query("match_date"),
+		SortBy:    c.Query("sort_by"),
+		Order:     c.Query("order"),
 	}
 
 	matches, total, err := h.matchService.ListMatches(opts)

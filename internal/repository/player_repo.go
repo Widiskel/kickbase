@@ -2,6 +2,7 @@ package repository
 
 import (
 	"kickbase/internal/domain"
+	"kickbase/internal/handler"
 	"kickbase/internal/interfaces"
 	"strings"
 
@@ -43,13 +44,28 @@ func (r *PlayerRepository) List(opts interfaces.PlayerFilterOptions) ([]domain.P
 	query := r.db.Model(&domain.Player{})
 
 	if opts.TeamID != "" {
-		query = query.Where("team_id = ?", opts.TeamID)
+		fc := handler.ParseFilter(opts.TeamID, handler.OpEQ)
+		query = handler.ApplyFilterToQuery(query, "team_id", fc)
 	}
 	if opts.Name != "" {
-		query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(opts.Name)+"%")
+		fc := handler.ParseFilter(opts.Name, handler.OpCT)
+		query = handler.ApplyFilterToQuery(query, "name", fc)
 	}
 	if opts.Position != "" {
-		query = query.Where("position = ?", opts.Position)
+		fc := handler.ParseFilter(opts.Position, handler.OpEQ)
+		query = handler.ApplyFilterToQuery(query, "position", fc)
+	}
+	if opts.Height != "" {
+		fc := handler.ParseFilter(opts.Height, handler.OpEQ)
+		query = handler.ApplyFilterToQuery(query, "height", fc)
+	}
+	if opts.Weight != "" {
+		fc := handler.ParseFilter(opts.Weight, handler.OpEQ)
+		query = handler.ApplyFilterToQuery(query, "weight", fc)
+	}
+	if opts.JerseyNumber != "" {
+		fc := handler.ParseFilter(opts.JerseyNumber, handler.OpEQ)
+		query = handler.ApplyFilterToQuery(query, "jersey_number", fc)
 	}
 
 	if err := query.Count(&total).Error; err != nil {

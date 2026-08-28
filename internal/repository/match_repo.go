@@ -2,6 +2,7 @@ package repository
 
 import (
 	"kickbase/internal/domain"
+	"kickbase/internal/handler"
 	"kickbase/internal/interfaces"
 	"strings"
 
@@ -35,16 +36,26 @@ func (r *MatchRepository) List(opts interfaces.MatchFilterOptions) ([]domain.Mat
 	query := r.db.Model(&domain.Match{})
 
 	if opts.TeamID != "" {
-		query = query.Where("home_team_id = ? OR away_team_id = ?", opts.TeamID, opts.TeamID)
+		fc := handler.ParseFilter(opts.TeamID, handler.OpEQ)
+		if fc.Op == handler.OpEQ {
+			query = query.Where("home_team_id = ? OR away_team_id = ?", fc.Value, fc.Value)
+		} else if fc.Op == handler.OpIN && len(fc.Values) > 0 {
+			query = query.Where("home_team_id IN ? OR away_team_id IN ?", fc.Values, fc.Values)
+		}
 	}
 	if opts.Status != "" {
-		query = query.Where("status = ?", opts.Status)
+		fc := handler.ParseFilter(opts.Status, handler.OpEQ)
+		query = handler.ApplyFilterToQuery(query, "status", fc)
 	}
 	if opts.DateFrom != "" {
 		query = query.Where("match_date >= ?", opts.DateFrom)
 	}
 	if opts.DateTo != "" {
 		query = query.Where("match_date <= ?", opts.DateTo)
+	}
+	if opts.MatchDate != "" {
+		fc := handler.ParseFilter(opts.MatchDate, handler.OpEQ)
+		query = handler.ApplyFilterToQuery(query, "match_date", fc)
 	}
 
 	if err := query.Count(&total).Error; err != nil {

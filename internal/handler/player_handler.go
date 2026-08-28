@@ -61,9 +61,12 @@ func (h *PlayerHandler) CreatePlayer(c *gin.Context) {
 // @Description Get a paginated list of players with optional team, position, name filtering and sorting
 // @Tags Players
 // @Produce json
-// @Param team_id query string false "Filter by team ID"
-// @Param position query string false "Filter by position (e.g. CF, LWF, CB, GK)"
-// @Param name query string false "Filter by player name (case-insensitive)"
+// @Param team_id query string false "Filter by team ID (supports OP:VAL e.g. EQ:uuid, IN:uuid1,uuid2)"
+// @Param position query string false "Filter by position (supports OP:VAL e.g. EQ:CF, IN:CF,SS,LWF, NI:GK)"
+// @Param name query string false "Filter by player name (supports OP:VAL e.g. CT:Bambang)"
+// @Param height query string false "Filter by height in cm (supports OP:VAL e.g. GT:180, BT:170,185)"
+// @Param weight query string false "Filter by weight in kg (supports OP:VAL e.g. LT:75, GTE:70)"
+// @Param jersey_number query string false "Filter by jersey number (supports OP:VAL e.g. EQ:10, LT:20)"
 // @Param sort_by query string false "Sort field (name, jersey_number, height, weight, created_at)" default(created_at)
 // @Param order query string false "Sort order (asc, desc)" default(desc)
 // @Param page query int false "Page number" default(1)
@@ -74,13 +77,16 @@ func (h *PlayerHandler) ListPlayers(c *gin.Context) {
 	page, limit := GetPagination(c)
 
 	opts := interfaces.PlayerFilterOptions{
-		Page:      page,
-		Limit:     limit,
-		TeamID:    c.Query("team_id"),
-		Position:  c.Query("position"),
-		Name:      c.Query("name"),
-		SortBy:    c.Query("sort_by"),
-		Order:     c.Query("order"),
+		Page:         page,
+		Limit:        limit,
+		TeamID:       c.Query("team_id"),
+		Position:     c.Query("position"),
+		Name:         c.Query("name"),
+		Height:       c.Query("height"),
+		Weight:       c.Query("weight"),
+		JerseyNumber: c.Query("jersey_number"),
+		SortBy:       c.Query("sort_by"),
+		Order:        c.Query("order"),
 	}
 
 	players, total, err := h.playerService.ListPlayers(opts)

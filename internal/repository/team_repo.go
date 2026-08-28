@@ -2,6 +2,7 @@ package repository
 
 import (
 	"kickbase/internal/domain"
+	"kickbase/internal/handler"
 	"kickbase/internal/interfaces"
 	"strings"
 
@@ -51,10 +52,16 @@ func (r *TeamRepository) List(opts interfaces.TeamFilterOptions) ([]domain.Team,
 	query := r.db.Model(&domain.Team{})
 
 	if opts.Name != "" {
-		query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(opts.Name)+"%")
+		fc := handler.ParseFilter(opts.Name, handler.OpCT)
+		query = handler.ApplyFilterToQuery(query, "name", fc)
 	}
 	if opts.City != "" {
-		query = query.Where("LOWER(city) = ?", strings.ToLower(opts.City))
+		fc := handler.ParseFilter(opts.City, handler.OpEQ)
+		query = handler.ApplyFilterToQuery(query, "city", fc)
+	}
+	if opts.FoundedYear != "" {
+		fc := handler.ParseFilter(opts.FoundedYear, handler.OpEQ)
+		query = handler.ApplyFilterToQuery(query, "founded_year", fc)
 	}
 
 	if err := query.Count(&total).Error; err != nil {
