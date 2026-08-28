@@ -81,9 +81,13 @@ Playstyle menentukan gaya dan peran taktis pemain di lapangan. Setiap playstyle 
 | 14 | Endpoint pembacaan (GET teams, players, matches, reports) dapat diakses publik | Memudahkan integrasi dengan aplikasi mobile Android tanpa mewajibkan login untuk membaca data |
 | 15 | Seluruh endpoint list mendukung Pagination (`page`, `limit`), Dynamic Filtering, dan Sorting (`sort_by`, `order`) | Mencegah bottleneck performa dan memudahkan query data spesifik |
 | 16 | Database menggunakan PostgreSQL 16 dengan GORM | Relational data dengan constraint integritas ketat (FK, Unique Index, Cascading) cocok untuk RDBMS |
-| 17 | Soft delete + Audit Trail via `_history` tables bertipe JSONB indexed | Setiap mutasi tercatat lengkap dengan kemampuan rollback / revert snapshot versi |
+| 17 | Soft delete + Audit Trail via `_history` tables bertipe JSONB indexed (Delta Changes) | Hanya menyimpan perubahan delta (old vs new) untuk menghemat storage hingga ~70% sekaligus mendukung fitur rollback/revert snapshot versi |
 | 18 | Observabilitas terstandarisasi dengan Zerolog JSON logging, Prometheus `/metrics`, Grafana, dan Loki log aggregator | Memudahkan monitoring latensi, request rate, metrik bisnis, dan pencarian log error real-time |
 | 19 | Containerization multi-container via Docker/Podman Compose | Memastikan environment seragam bagi evaluator dalam satu perintah `docker compose up` |
+| 20 | Optimistic Locking via integer `version` pada setiap entitas | Mencegah *lost update* akibat race condition konkuren tanpa overhead blocking lock RDBMS (`SELECT FOR UPDATE`) |
+| 21 | Transaksi database atomik (`db.Transaction`) pada pelaporan hasil pertandingan | Menjamin konsistensi data skor, status match, entri gol, dan history tanpa risiko *partial write* |
+| 22 | Strict Column Whitelisting untuk dynamic sorting (`sort_by`) | Menutup celah SQL Injection pada query ordering tanpa membatasi fleksibilitas sorting klien |
+| 23 | Zero-Configuration Anonymous Access pada Grafana Dashboard | Memberikan pengalaman evaluasi instan (*frictionless*) tanpa mewajibkan evaluator mengetik kredensial login |
 
 ---
 
@@ -91,13 +95,15 @@ Playstyle menentukan gaya dan peran taktis pemain di lapangan. Setiap playstyle 
 
 | # | Keputusan | Pilihan | Alternatif yang Ditolak |
 |---|-----------|---------|------------------------|
-| 20 | Format tanggal & waktu pertandingan | `YYYY-MM-DD` & `HH:MM:SS` | Format lokal (`DD/MM/YYYY`) — ISO 8601 lebih universal untuk API |
-| 21 | Response envelope format | Envelope konsisten `{success, data, message, error}` | Bare response — envelope lebih terstruktur untuk integrasi client |
-| 22 | Penghapusan tim yang memiliki pemain | Restrict (409 Conflict) | Cascade delete — berisiko menghapus data historis pemain tanpa sengaja |
-| 23 | Penghapusan pemain yang memiliki catatan gol | Restrict (409 Conflict) | Cascade delete — skor pertandingan masa lalu menjadi tidak akurat |
-| 24 | Transisi status pertandingan | `scheduled` ➔ `completed` / `cancelled` / `deferred` | Langsung delete jadwal — status lifecycle menjaga rekam jejak |
-| 25 | Larangan tim bertanding melawan dirinya sendiri | Constraint `home_team_id != away_team_id` (400 Bad Request) | Membiarkan di DB — tidak masuk akal dalam aturan sepakbola |
-| 26 | Validasi pencetak gol | Pemain wajib terdaftar di salah satu tim yang bertanding | Bebas input ID pemain — mencegah data anomali |
+| 24 | Format tanggal & waktu pertandingan | `YYYY-MM-DD` & `HH:MM:SS` | Format lokal (`DD/MM/YYYY`) — ISO 8601 lebih universal untuk API |
+| 25 | Response envelope format | Envelope konsisten `{success, data, message, error}` | Bare response — envelope lebih terstruktur untuk integrasi client |
+| 26 | Penghapusan tim yang memiliki pemain | Restrict (409 Conflict) | Cascade delete — berisiko menghapus data historis pemain tanpa sengaja |
+| 27 | Penghapusan pemain yang memiliki catatan gol | Restrict (409 Conflict) | Cascade delete — skor pertandingan masa lalu menjadi tidak akurat |
+| 28 | Transisi status pertandingan | `scheduled` ➔ `completed` / `cancelled` / `deferred` | Langsung delete jadwal — status lifecycle menjaga rekam jejak |
+| 29 | Larangan tim bertanding melawan dirinya sendiri | Constraint `home_team_id != away_team_id` (400 Bad Request) | Membiarkan di DB — tidak masuk akal dalam aturan sepakbola |
+| 30 | Validasi pencetak gol | Pemain wajib terdaftar di salah satu tim yang bertanding | Bebas input ID pemain — mencegah data anomali |
+| 31 | Validasi kesesuaian skor dan entri gol | `len(goals) == home_score + away_score` | Membiarkan jumlah gol tidak sinkron — menjaga integritas data statistik |
+| 32 | Dynamic Scrape Gauges vs Background Worker | Dynamic count query saat scrape `/metrics` | Periodic background polling — dynamic scrape menjamin akurasi 100% tanpa memory leak worker |
 
 ---
 
