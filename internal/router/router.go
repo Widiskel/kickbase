@@ -3,6 +3,8 @@ package router
 import (
 	"kickbase/internal/handler"
 	"kickbase/internal/middleware"
+	"kickbase/internal/repository"
+	"kickbase/internal/service"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -19,7 +21,7 @@ func Setup(db *gorm.DB) *gin.Engine {
 	r.Use(middleware.Logger())
 	r.Use(middleware.PrometheusMetrics())
 
-	// Metrics endpoint (outside /api group)
+	// Metrics endpoint
 	r.GET("/metrics", func(c *gin.Context) {
 		c.Header("Content-Type", "text/plain; charset=utf-8")
 		c.String(200, middleware.GetMetrics())
@@ -27,6 +29,27 @@ func Setup(db *gorm.DB) *gin.Engine {
 
 	// Swagger documentation
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Initialize repositories
+	teamRepo := repository.NewTeamRepository(db)
+	playerRepo := repository.NewPlayerRepository(db)
+	matchRepo := repository.NewMatchRepository(db)
+	resultRepo := repository.NewResultRepository(db)
+	goalRepo := repository.NewGoalRepository(db)
+
+	// Initialize services
+	teamSvc := service.NewTeamService(teamRepo)
+	playerSvc := service.NewPlayerService(playerRepo, teamRepo)
+	matchSvc := service.NewMatchService(matchRepo, teamRepo)
+	resultSvc := service.NewResultService(resultRepo, matchRepo, goalRepo, playerRepo, db)
+	reportSvc := service.NewReportService(db, matchRepo, resultRepo, goalRepo, teamRepo, playerRepo)
+
+	// Initialize handlers
+	teamHandler := handler.NewTeamHandler(teamSvc)
+	playerHandler := handler.NewPlayerHandler(playerSvc)
+	matchHandler := handler.NewMatchHandler(matchSvc)
+	resultHandler := handler.NewResultHandler(resultSvc)
+	reportHandler := handler.NewReportHandler(reportSvc)
 
 	// API routes
 	api := r.Group("/api")
@@ -39,50 +62,50 @@ func Setup(db *gorm.DB) *gin.Engine {
 		// Teams
 		teams := api.Group("/teams")
 		{
-			teams.POST("", handler.CreateTeam(db))
-			teams.GET("", handler.ListTeams(db))
-			teams.GET("/:id", handler.GetTeam(db))
-			teams.PUT("/:id", handler.UpdateTeam(db))
-			teams.DELETE("/:id", handler.DeleteTeam(db))
-			teams.GET("/:id/history", handler.GetTeamHistory(db))
-			teams.POST("/:id/revert", handler.RevertTeam(db))
+			teams.POST("", teamHandler.CreateTeam)
+			teams.GET("", teamHandler.ListTeams)
+			teams.GET("/:id", teamHandler.GetTeam)
+			teams.PUT("/:id", teamHandler.UpdateTeam)
+			teams.DELETE("/:id", teamHandler.DeleteTeam)
+			teams.GET("/:id/history", teamHandler.GetTeamHistory)
+			teams.POST("/:id/revert", teamHandler.RevertTeam)
 		}
 
-		// Players (separate group to avoid route conflict)
+		// Players
 		players := api.Group("/players")
 		{
-			players.POST("", handler.CreatePlayer(db))
-			players.GET("", handler.ListPlayers(db))
-			players.GET("/:id", handler.GetPlayer(db))
-			players.PUT("/:id", handler.UpdatePlayer(db))
-			players.DELETE("/:id", handler.DeletePlayer(db))
-			players.GET("/:id/history", handler.GetPlayerHistory(db))
-			players.POST("/:id/revert", handler.RevertPlayer(db))
+			players.POST("", playerHandler.CreatePlayer)
+			players.GET("", playerHandler.ListPlayers)
+			players.GET("/:id", playerHandler.GetPlayer)
+			players.PUT("/:id", playerHandler.UpdatePlayer)
+			players.DELETE("/:id", playerHandler.DeletePlayer)
+			players.GET("/:id/history", playerHandler.GetPlayerHistory)
+			players.POST("/:id/revert", playerHandler.RevertPlayer)
 		}
 
 		// Matches
 		matches := api.Group("/matches")
 		{
-			matches.POST("", handler.CreateMatch(db))
-			matches.GET("", handler.ListMatches(db))
-			matches.GET("/:id", handler.GetMatch(db))
-			matches.PATCH("/:id/status", handler.UpdateMatchStatus(db))
-			matches.GET("/:id/history", handler.GetMatchHistory(db))
-			matches.POST("/:id/revert", handler.RevertMatch(db))
+			matches.POST("", matchHandler.CreateMatch)
+			matches.GET("", matchHandler.ListMatches)
+			matches.GET("/:id", matchHandler.GetMatch)
+			matches.PATCH("/:id/status", matchHandler.UpdateMatchStatus)
+			matches.GET("/:id/history", matchHandler.GetMatchHistory)
+			matches.POST("/:id/revert", matchHandler.RevertMatch)
 		}
 
-		// Match Results
+		// Results
 		results := api.Group("/results")
 		{
-			results.POST("", handler.CreateMatchResult(db))
-			results.GET("/:matchId", handler.GetMatchResult(db))
+			results.POST("", resultHandler.CreateMatchResult)
+			results.GET("/:matchId", resultHandler.GetMatchResult)
 		}
 
 		// Reports
 		reports := api.Group("/reports")
 		{
-			reports.GET("/matches", handler.ListMatchReports(db))
-			reports.GET("/matches/:id", handler.GetMatchReport(db))
+			reports.GET("/matches", reportHandler.ListMatchReports)
+			reports.GET("/matches/:id", reportHandler.GetMatchReport)
 		}
 	}
 

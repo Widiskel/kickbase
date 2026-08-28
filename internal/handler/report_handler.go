@@ -4,36 +4,47 @@ import (
 	"net/http"
 	"strconv"
 
-	"kickbase/internal/repository"
-	"kickbase/internal/service"
+	"kickbase/internal/interfaces"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
-func ListMatchReports(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-		if page < 1 { page = 1 }
-		if limit < 1 { limit = 10 }
+// ReportHandler handles report-related HTTP requests
+type ReportHandler struct {
+	reportService interfaces.ReportService
+}
 
-		// Create service
-		matchRepo := repository.NewMatchRepository(db)
-		resultRepo := repository.NewResultRepository(db)
-		goalRepo := repository.NewGoalRepository(db)
-		teamRepo := repository.NewTeamRepository(db)
-		playerRepo := repository.NewPlayerRepository(db)
-		reportSvc := service.NewReportService(db, matchRepo, resultRepo, goalRepo, teamRepo, playerRepo)
+// NewReportHandler creates a new ReportHandler
+func NewReportHandler(reportService interfaces.ReportService) *ReportHandler {
+	return &ReportHandler{reportService: reportService}
+}
 
-		reports, total, err := reportSvc.ListMatchReports(page, limit)
-		if err != nil {
-			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list reports", nil)
-			return
-		}
-
-		RespondPaginated(c, reports, total, page, limit)
+// ListMatchReports godoc
+// @Summary List all match reports
+// @Description Get a paginated list of all match reports with scores and status
+// @Tags Reports
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} PaginatedResponse
+// @Router /api/reports/matches [get]
+func (h *ReportHandler) ListMatchReports(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if page < 1 {
+		page = 1
 	}
+	if limit < 1 {
+		limit = 10
+	}
+
+	reports, total, err := h.reportService.ListMatchReports(page, limit)
+	if err != nil {
+		RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list reports", nil)
+		return
+	}
+
+	RespondPaginated(c, reports, total, page, limit)
 }
 
 // GetMatchReport godoc
@@ -45,28 +56,18 @@ func ListMatchReports(db *gorm.DB) gin.HandlerFunc {
 // @Success 200 {object} SuccessResponse
 // @Failure 404 {object} ErrorResponse
 // @Router /api/reports/matches/{id} [get]
-func GetMatchReport(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id := c.Param("id")
+func (h *ReportHandler) GetMatchReport(c *gin.Context) {
+	id := c.Param("id")
 
-		// Create service
-		matchRepo := repository.NewMatchRepository(db)
-		resultRepo := repository.NewResultRepository(db)
-		goalRepo := repository.NewGoalRepository(db)
-		teamRepo := repository.NewTeamRepository(db)
-		playerRepo := repository.NewPlayerRepository(db)
-		reportSvc := service.NewReportService(db, matchRepo, resultRepo, goalRepo, teamRepo, playerRepo)
-
-		report, err := reportSvc.GetMatchReport(id)
-		if err != nil {
-			if err.Error() == "match not found" {
-				RespondError(c, http.StatusNotFound, "NOT_FOUND", "Match not found", nil)
-			} else {
-				RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to get report", nil)
-			}
-			return
+	report, err := h.reportService.GetMatchReport(id)
+	if err != nil {
+		if err.Error() == "match not found" {
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
+		} else {
+			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to get report", nil)
 		}
-
-		RespondSuccess(c, report, "")
+		return
 	}
+
+	RespondSuccess(c, report, "")
 }

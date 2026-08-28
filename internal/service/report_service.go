@@ -37,27 +37,7 @@ func NewReportService(
 	}
 }
 
-type MatchReport struct {
-	MatchID          string      `json:"match_id"`
-	MatchDate        string      `json:"match_date"`
-	MatchTime        string      `json:"match_time"`
-	HomeTeam         string      `json:"home_team"`
-	AwayTeam         string      `json:"away_team"`
-	HomeScore        *int        `json:"home_score,omitempty"`
-	AwayScore        *int        `json:"away_score,omitempty"`
-	Status           string      `json:"status"`
-	TopScorers       []TopScorer `json:"top_scorers,omitempty"`
-	CumulativeHomeWins int       `json:"cumulative_home_wins"`
-	CumulativeAwayWins int       `json:"cumulative_away_wins"`
-}
-
-type TopScorer struct {
-	PlayerID   string `json:"player_id"`
-	PlayerName string `json:"player_name"`
-	Goals      int    `json:"goals"`
-}
-
-func (s *ReportService) GetMatchReport(matchID string) (*MatchReport, error) {
+func (s *ReportService) GetMatchReport(matchID string) (*interfaces.MatchReport, error) {
 	match, err := s.matchRepo.FindByID(matchID)
 	if err != nil {
 		return nil, errors.New("match not found")
@@ -66,7 +46,7 @@ func (s *ReportService) GetMatchReport(matchID string) (*MatchReport, error) {
 	homeTeam, _ := s.teamRepo.FindByID(match.HomeTeamID)
 	awayTeam, _ := s.teamRepo.FindByID(match.AwayTeamID)
 
-	report := &MatchReport{
+	report := &interfaces.MatchReport{
 		MatchID:   match.ID,
 		MatchDate: match.MatchDate,
 		MatchTime: match.MatchTime,
@@ -107,7 +87,7 @@ func (s *ReportService) GetMatchReport(matchID string) (*MatchReport, error) {
 		for playerID, count := range scorerMap {
 			if count == maxGoals {
 				player, _ := s.playerRepo.FindByID(playerID)
-				report.TopScorers = append(report.TopScorers, TopScorer{
+				report.TopScorers = append(report.TopScorers, interfaces.TopScorer{
 					PlayerID:   playerID,
 					PlayerName: player.Name,
 					Goals:      count,
@@ -123,13 +103,13 @@ func (s *ReportService) GetMatchReport(matchID string) (*MatchReport, error) {
 	return report, nil
 }
 
-func (s *ReportService) ListMatchReports(page, limit int) ([]MatchReport, int64, error) {
+func (s *ReportService) ListMatchReports(page, limit int) ([]interfaces.MatchReport, int64, error) {
 	matches, total, err := s.matchRepo.List(page, limit)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to list matches: %w", err)
 	}
 
-	var reports []MatchReport
+	var reports []interfaces.MatchReport
 	for _, match := range matches {
 		report, err := s.GetMatchReport(match.ID)
 		if err != nil {

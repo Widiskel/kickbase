@@ -35,19 +35,7 @@ func NewResultService(
 	}
 }
 
-type CreateResultInput struct {
-	MatchID   string         `json:"match_id"`
-	HomeScore int            `json:"home_score"`
-	AwayScore int            `json:"away_score"`
-	Goals     []GoalInput    `json:"goals"`
-}
-
-type GoalInput struct {
-	PlayerID string `json:"player_id"`
-	GoalTime string `json:"goal_time"`
-}
-
-func (s *ResultService) CreateResult(input CreateResultInput) (*domain.MatchResult, error) {
+func (s *ResultService) CreateResult(input interfaces.CreateResultInput) (*domain.MatchResult, error) {
 	// Verify match exists and is scheduled
 	match, err := s.matchRepo.FindByID(input.MatchID)
 	if err != nil {

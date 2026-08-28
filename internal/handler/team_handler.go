@@ -4,15 +4,20 @@ import (
 	"net/http"
 	"strconv"
 
-	"kickbase/internal/domain"
-	"kickbase/internal/repository"
-	"kickbase/internal/service"
+	"kickbase/internal/interfaces"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
-// Team handlers
+// TeamHandler handles team-related HTTP requests
+type TeamHandler struct {
+	teamService interfaces.TeamService
+}
+
+// NewTeamHandler creates a new TeamHandler
+func NewTeamHandler(teamService interfaces.TeamService) *TeamHandler {
+	return &TeamHandler{teamService: teamService}
+}
 
 // CreateTeam godoc
 // @Summary Create a new team
@@ -20,24 +25,29 @@ import (
 // @Tags Teams
 // @Accept json
 // @Produce json
-// @Param team body domain.Team true "Team data"
+// @Param team body CreateTeamRequest true "Team data"
 // @Success 201 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /api/teams [post]
-func CreateTeam(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var team domain.Team
-		if err := c.ShouldBindJSON(&team); err != nil {
-			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
-			return
-		}
-		if err := db.Create(&team).Error; err != nil {
-			RespondError(c, http.StatusConflict, "CONFLICT", "Team name already exists", nil)
-			return
-		}
-		RespondCreated(c, team)
+func (h *TeamHandler) CreateTeam(c *gin.Context) {
+	var req CreateTeamRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+		return
 	}
+
+	team := req.ToDomain()
+	if err := h.teamService.CreateTeam(team); err != nil {
+		if err.Error() == "team name already exists" {
+			RespondError(c, http.StatusConflict, "CONFLICT", err.Error(), nil)
+		} else {
+			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create team", nil)
+		}
+		return
+	}
+
+	RespondCreated(c, team)
 }
 
 // ListTeams godoc
@@ -49,21 +59,23 @@ func CreateTeam(db *gorm.DB) gin.HandlerFunc {
 // @Param limit query int false "Items per page" default(10)
 // @Success 200 {object} PaginatedResponse
 // @Router /api/teams [get]
-func ListTeams(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-		if page < 1 { page = 1 }
-		if limit < 1 { limit = 10 }
-
-		var teams []domain.Team
-		var total int64
-
-		db.Model(&domain.Team{}).Count(&total)
-		db.Offset((page - 1) * limit).Limit(limit).Find(&teams)
-
-		RespondPaginated(c, teams, total, page, limit)
+func (h *TeamHandler) ListTeams(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if page < 1 {
+		page = 1
 	}
+	if limit < 1 {
+		limit = 10
+	}
+
+	teams, total, err := h.teamService.ListTeams(page, limit)
+	if err != nil {
+		RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list teams", nil)
+		return
+	}
+
+	RespondPaginated(c, teams, total, page, limit)
 }
 
 // GetTeam godoc
@@ -75,16 +87,16 @@ func ListTeams(db *gorm.DB) gin.HandlerFunc {
 // @Success 200 {object} SuccessResponse
 // @Failure 404 {object} ErrorResponse
 // @Router /api/teams/{id} [get]
-func GetTeam(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id := c.Param("id")
-		var team domain.Team
-		if err := db.First(&team, "id = ?", id).Error; err != nil {
-			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Team not found", nil)
-			return
-		}
-		RespondSuccess(c, team, "")
+func (h *TeamHandler) GetTeam(c *gin.Context) {
+	id := c.Param("id")
+
+	team, err := h.teamService.GetTeam(id)
+	if err != nil {
+		RespondError(c, http.StatusNotFound, "NOT_FOUND", "Team not found", nil)
+		return
 	}
+
+	RespondSuccess(c, team, "")
 }
 
 // UpdateTeam godoc
@@ -94,44 +106,35 @@ func GetTeam(db *gorm.DB) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path string true "Team ID"
-// @Param team body domain.Team true "Team data with version"
+// @Param team body UpdateTeamRequest true "Team data with version"
 // @Success 200 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /api/teams/{id} [put]
-func UpdateTeam(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id := c.Param("id")
-		var team domain.Team
-		if err := db.First(&team, "id = ?", id).Error; err != nil {
-			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Team not found", nil)
-			return
-		}
+func (h *TeamHandler) UpdateTeam(c *gin.Context) {
+	id := c.Param("id")
 
-		var input domain.Team
-		if err := c.ShouldBindJSON(&input); err != nil {
-			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
-			return
-		}
-
-		if input.Version != team.Version {
-			RespondError(c, http.StatusConflict, "CONFLICT", "Version mismatch", nil)
-			return
-		}
-
-		updates := map[string]interface{}{
-			"name":         input.Name,
-			"logo_url":     input.LogoURL,
-			"founded_year": input.FoundedYear,
-			"address":      input.Address,
-			"city":         input.City,
-			"version":      team.Version + 1,
-		}
-
-		db.Model(&team).Updates(updates)
-		RespondSuccess(c, team, "Team updated successfully")
+	var req UpdateTeamRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+		return
 	}
+
+	team := req.ToDomain(id)
+	if err := h.teamService.UpdateTeam(team); err != nil {
+		switch err.Error() {
+		case "team not found":
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
+		case "version mismatch":
+			RespondError(c, http.StatusConflict, "CONFLICT", err.Error(), nil)
+		default:
+			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to update team", nil)
+		}
+		return
+	}
+
+	RespondSuccess(c, team, "Team updated successfully")
 }
 
 // DeleteTeam godoc
@@ -144,72 +147,74 @@ func UpdateTeam(db *gorm.DB) gin.HandlerFunc {
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /api/teams/{id} [delete]
-func DeleteTeam(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id := c.Param("id")
-		var team domain.Team
-		if err := db.First(&team, "id = ?", id).Error; err != nil {
-			RespondError(c, http.StatusNotFound, "NOT_FOUND", "Team not found", nil)
-			return
-		}
+func (h *TeamHandler) DeleteTeam(c *gin.Context) {
+	id := c.Param("id")
 
-		// Check if team has active players
-		var playerCount int64
-		db.Model(&domain.Player{}).Where("team_id = ?", id).Count(&playerCount)
-		if playerCount > 0 {
-			RespondError(c, http.StatusConflict, "CONFLICT", "Cannot delete team with active players", nil)
-			return
+	if err := h.teamService.DeleteTeam(id); err != nil {
+		switch err.Error() {
+		case "team not found":
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
+		case "cannot delete team with active players":
+			RespondError(c, http.StatusConflict, "CONFLICT", err.Error(), nil)
+		default:
+			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to delete team", nil)
 		}
-
-		db.Delete(&team)
-		RespondNoContent(c)
+		return
 	}
+
+	RespondNoContent(c)
 }
 
-func GetTeamHistory(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id := c.Param("id")
-		var history []domain.TeamHistory
-		db.Where("team_id = ?", id).Order("version").Find(&history)
-		RespondSuccess(c, history, "")
+// GetTeamHistory godoc
+// @Summary Get team history
+// @Description Get the version history of a team
+// @Tags Teams
+// @Produce json
+// @Param id path string true "Team ID"
+// @Success 200 {object} SuccessResponse
+// @Router /api/teams/{id}/history [get]
+func (h *TeamHandler) GetTeamHistory(c *gin.Context) {
+	id := c.Param("id")
+
+	history, err := h.teamService.GetTeamHistory(id)
+	if err != nil {
+		RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to get history", nil)
+		return
 	}
+
+	RespondSuccess(c, history, "")
 }
 
-func RevertTeam(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id := c.Param("id")
-
-		var input struct {
-			TargetVersion int `json:"target_version"`
-		}
-		if err := c.ShouldBindJSON(&input); err != nil {
-			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
-			return
-		}
-
-		teamRepo := repository.NewTeamRepository(db)
-		svc := service.NewTeamService(teamRepo)
-
-		if err := svc.RevertTeam(id, input.TargetVersion); err != nil {
-			if err.Error() == "team not found" || err.Error() == "target version not found in history" {
-				RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
-			} else {
-				RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to revert team", nil)
-			}
-			return
-		}
-
-		RespondSuccess(c, nil, "Team reverted successfully")
-	}
-}
-
-// CreatePlayer godoc
-// @Summary Create a new player
-// @Description Add a new player to a team
-// @Tags Players
+// RevertTeam godoc
+// @Summary Revert team to previous version
+// @Description Revert a team to a specific previous version
+// @Tags Teams
 // @Accept json
 // @Produce json
-// @Param player body domain.Player true "Player data"
-// @Success 201 {object} SuccessResponse
+// @Param id path string true "Team ID"
+// @Param request body RevertRequest true "Target version"
+// @Success 200 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
-// @Failure 409 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /api/teams/{id}/revert [post]
+func (h *TeamHandler) RevertTeam(c *gin.Context) {
+	id := c.Param("id")
+
+	var req RevertRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+		return
+	}
+
+	if err := h.teamService.RevertTeam(id, req.TargetVersion); err != nil {
+		switch err.Error() {
+		case "team not found", "target version not found in history":
+			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
+		default:
+			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to revert team", nil)
+		}
+		return
+	}
+
+	RespondSuccess(c, nil, "Team reverted successfully")
+}
