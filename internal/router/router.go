@@ -1,6 +1,7 @@
 package router
 
 import (
+	_ "kickbase/docs"
 	"kickbase/internal/config"
 	"kickbase/internal/domain"
 	"kickbase/internal/handler"

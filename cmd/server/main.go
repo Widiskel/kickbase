@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "kickbase/docs"
 	"kickbase/internal/config"
 	"kickbase/internal/database"
 	"kickbase/internal/router"
