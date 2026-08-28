@@ -50,6 +50,11 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to run database migrations")
 	}
 
+	// Seed initial data (Admin/Staff/Viewer & Initial Club Data)
+	if err := database.Seed(db); err != nil {
+		log.Warn().Err(err).Msg("Database seeding warning")
+	}
+
 	// Setup router
 	r := router.Setup(db)
 

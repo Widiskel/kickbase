@@ -9,25 +9,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ResultHandler handles match result-related HTTP requests
 type ResultHandler struct {
 	resultService interfaces.ResultService
 }
 
-// NewResultHandler creates a new ResultHandler
 func NewResultHandler(resultService interfaces.ResultService) *ResultHandler {
 	return &ResultHandler{resultService: resultService}
 }
 
 // CreateMatchResult godoc
 // @Summary Report match result
-// @Description Report the result of a completed match with goals
+// @Description Record the final score and goals for a completed match
 // @Tags Results
 // @Accept json
 // @Produce json
-// @Param result body CreateResultRequest true "Match result with goals"
+// @Security BearerAuth
+// @Param result body CreateResultRequest true "Match result data with goals"
 // @Success 201 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /api/results [post]
@@ -38,14 +39,17 @@ func (h *ResultHandler) CreateMatchResult(c *gin.Context) {
 		return
 	}
 
-	input := req.ToServiceInput()
-	result, err := h.resultService.CreateResult(input)
+	result, err := h.resultService.CreateResult(req.ToServiceInput())
 	if err != nil {
 		switch err.Error() {
 		case "match not found":
 			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
-		case "match is not in scheduled status", "match result already exists":
+		case "match result already exists":
 			RespondError(c, http.StatusConflict, "CONFLICT", err.Error(), nil)
+		case "can only report result for scheduled matches":
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
+		case "scores cannot be negative", "number of goals does not match total score":
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 		default:
 			if strings.Contains(err.Error(), "does not belong to either team") || strings.Contains(err.Error(), "player") {
 				RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)

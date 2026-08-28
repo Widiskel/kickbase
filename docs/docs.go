@@ -189,32 +189,32 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by status (scheduled, completed, cancelled, deferred)",
+                        "description": "Filter by match status (scheduled, completed, cancelled, deferred)",
                         "name": "status",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter matches starting from date (YYYY-MM-DD)",
+                        "description": "Filter matches from date (YYYY-MM-DD)",
                         "name": "date_from",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter matches up to date (YYYY-MM-DD)",
+                        "description": "Filter matches to date (YYYY-MM-DD)",
                         "name": "date_to",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "default": "match_date",
-                        "description": "Sort field (match_date, match_time, created_at)",
+                        "description": "Sort field (match_date, created_at)",
                         "name": "sort_by",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "default": "asc",
+                        "default": "desc",
                         "description": "Sort order (asc, desc)",
                         "name": "order",
                         "in": "query"
@@ -230,7 +230,12 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a match schedule between two teams",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Schedule a match between two different teams",
                 "consumes": [
                     "application/json"
                 ],
@@ -243,7 +248,7 @@ const docTemplate = `{
                 "summary": "Schedule a new match",
                 "parameters": [
                     {
-                        "description": "Match data",
+                        "description": "Match schedule data",
                         "name": "match",
                         "in": "body",
                         "required": true,
@@ -261,6 +266,24 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }
@@ -334,6 +357,11 @@ const docTemplate = `{
         },
         "/api/matches/{id}/revert": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Revert a match to a specific previous version",
                 "consumes": [
                     "application/json"
@@ -376,6 +404,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -387,6 +427,11 @@ const docTemplate = `{
         },
         "/api/matches/{id}/status": {
             "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update the status of a match (scheduled, completed, cancelled, deferred)",
                 "consumes": [
                     "application/json"
@@ -429,6 +474,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -456,6 +513,38 @@ const docTemplate = `{
                 "summary": "List all players",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Filter by team ID",
+                        "name": "team_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by position (e.g. CF, LWF, CB, GK)",
+                        "name": "position",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by player name (case-insensitive)",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "created_at",
+                        "description": "Sort field (name, jersey_number, height, weight, created_at)",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Sort order (asc, desc)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "default": 1,
                         "description": "Page number",
@@ -467,38 +556,6 @@ const docTemplate = `{
                         "default": 10,
                         "description": "Items per page",
                         "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by team ID",
-                        "name": "team_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by player name",
-                        "name": "name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by position (CF, SS, CMF, CB, GK, etc.)",
-                        "name": "position",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "default": "jersey_number",
-                        "description": "Sort field (name, jersey_number, height, weight, created_at)",
-                        "name": "sort_by",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "default": "asc",
-                        "description": "Sort order (asc, desc)",
-                        "name": "order",
                         "in": "query"
                     }
                 ],
@@ -512,7 +569,12 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Add a new player to a team",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add a player to a team with eFootball position and playstyle validation",
                 "consumes": [
                     "application/json"
                 ],
@@ -547,6 +609,24 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -558,7 +638,7 @@ const docTemplate = `{
         },
         "/api/players/{id}": {
             "get": {
-                "description": "Get a single player by its ID",
+                "description": "Get a single player by their ID",
                 "produces": [
                     "application/json"
                 ],
@@ -591,6 +671,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update an existing player's information",
                 "consumes": [
                     "application/json"
@@ -633,6 +718,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -648,6 +745,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Soft delete a player (only if no goal records)",
                 "produces": [
                     "application/json"
@@ -668,6 +770,18 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
                     },
                     "404": {
                         "description": "Not Found",
@@ -715,6 +829,11 @@ const docTemplate = `{
         },
         "/api/players/{id}/revert": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Revert a player to a specific previous version",
                 "consumes": [
                     "application/json"
@@ -753,6 +872,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }
@@ -865,7 +996,12 @@ const docTemplate = `{
         },
         "/api/results": {
             "post": {
-                "description": "Report the result of a completed match with goals",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Record the final score and goals for a completed match",
                 "consumes": [
                     "application/json"
                 ],
@@ -878,7 +1014,7 @@ const docTemplate = `{
                 "summary": "Report match result",
                 "parameters": [
                     {
-                        "description": "Match result with goals",
+                        "description": "Match result data with goals",
                         "name": "result",
                         "in": "body",
                         "required": true,
@@ -896,6 +1032,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }
@@ -983,26 +1131,26 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by team name",
+                        "description": "Filter by team name (case-insensitive)",
                         "name": "name",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by headquarters city",
+                        "description": "Filter by city",
                         "name": "city",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "default": "created_at",
-                        "description": "Sort field (name, city, founded_year, created_at)",
+                        "description": "Sort field (name, founded_year, city, created_at)",
                         "name": "sort_by",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "default": "asc",
+                        "default": "desc",
                         "description": "Sort order (asc, desc)",
                         "name": "order",
                         "in": "query"
@@ -1018,7 +1166,12 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new football team with the provided details",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add a new team with unique name",
                 "consumes": [
                     "application/json"
                 ],
@@ -1049,6 +1202,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }
@@ -1097,6 +1262,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update an existing team's information",
                 "consumes": [
                     "application/json"
@@ -1139,6 +1309,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -1154,6 +1336,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Soft delete a team (only if no active players)",
                 "produces": [
                     "application/json"
@@ -1174,6 +1361,18 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
                     },
                     "404": {
                         "description": "Not Found",
@@ -1221,6 +1420,11 @@ const docTemplate = `{
         },
         "/api/teams/{id}/revert": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Revert a team to a specific previous version",
                 "consumes": [
                     "application/json"
@@ -1259,6 +1463,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/internal_handler.ErrorResponse"
                         }

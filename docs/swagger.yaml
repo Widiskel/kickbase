@@ -331,24 +331,24 @@ paths:
         in: query
         name: team_id
         type: string
-      - description: Filter by status (scheduled, completed, cancelled, deferred)
+      - description: Filter by match status (scheduled, completed, cancelled, deferred)
         in: query
         name: status
         type: string
-      - description: Filter matches starting from date (YYYY-MM-DD)
+      - description: Filter matches from date (YYYY-MM-DD)
         in: query
         name: date_from
         type: string
-      - description: Filter matches up to date (YYYY-MM-DD)
+      - description: Filter matches to date (YYYY-MM-DD)
         in: query
         name: date_to
         type: string
       - default: match_date
-        description: Sort field (match_date, match_time, created_at)
+        description: Sort field (match_date, created_at)
         in: query
         name: sort_by
         type: string
-      - default: asc
+      - default: desc
         description: Sort order (asc, desc)
         in: query
         name: order
@@ -366,9 +366,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a match schedule between two teams
+      description: Schedule a match between two different teams
       parameters:
-      - description: Match data
+      - description: Match schedule data
         in: body
         name: match
         required: true
@@ -385,6 +385,20 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Schedule a new match
       tags:
       - Matches
@@ -458,10 +472,20 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Revert match to previous version
       tags:
       - Matches
@@ -494,6 +518,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -502,6 +534,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Update match status
       tags:
       - Matches
@@ -510,6 +544,28 @@ paths:
       description: Get a paginated list of players with optional team, position, name
         filtering and sorting
       parameters:
+      - description: Filter by team ID
+        in: query
+        name: team_id
+        type: string
+      - description: Filter by position (e.g. CF, LWF, CB, GK)
+        in: query
+        name: position
+        type: string
+      - description: Filter by player name (case-insensitive)
+        in: query
+        name: name
+        type: string
+      - default: created_at
+        description: Sort field (name, jersey_number, height, weight, created_at)
+        in: query
+        name: sort_by
+        type: string
+      - default: desc
+        description: Sort order (asc, desc)
+        in: query
+        name: order
+        type: string
       - default: 1
         description: Page number
         in: query
@@ -520,28 +576,6 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: Filter by team ID
-        in: query
-        name: team_id
-        type: string
-      - description: Filter by player name
-        in: query
-        name: name
-        type: string
-      - description: Filter by position (CF, SS, CMF, CB, GK, etc.)
-        in: query
-        name: position
-        type: string
-      - default: jersey_number
-        description: Sort field (name, jersey_number, height, weight, created_at)
-        in: query
-        name: sort_by
-        type: string
-      - default: asc
-        description: Sort order (asc, desc)
-        in: query
-        name: order
-        type: string
       produces:
       - application/json
       responses:
@@ -555,7 +589,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Add a new player to a team
+      description: Add a player to a team with eFootball position and playstyle validation
       parameters:
       - description: Player data
         in: body
@@ -574,10 +608,24 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
         "409":
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Create a new player
       tags:
       - Players
@@ -595,6 +643,14 @@ paths:
       responses:
         "204":
           description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -603,11 +659,13 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Delete a player
       tags:
       - Players
     get:
-      description: Get a single player by its ID
+      description: Get a single player by their ID
       parameters:
       - description: Player ID
         in: path
@@ -655,6 +713,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -663,6 +729,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Update a player
       tags:
       - Players
@@ -713,10 +781,20 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Revert player to previous version
       tags:
       - Players
@@ -792,9 +870,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Report the result of a completed match with goals
+      description: Record the final score and goals for a completed match
       parameters:
-      - description: Match result with goals
+      - description: Match result data with goals
         in: body
         name: result
         required: true
@@ -811,6 +889,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -819,6 +905,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Report match result
       tags:
       - Results
@@ -863,20 +951,20 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: Filter by team name
+      - description: Filter by team name (case-insensitive)
         in: query
         name: name
         type: string
-      - description: Filter by headquarters city
+      - description: Filter by city
         in: query
         name: city
         type: string
       - default: created_at
-        description: Sort field (name, city, founded_year, created_at)
+        description: Sort field (name, founded_year, city, created_at)
         in: query
         name: sort_by
         type: string
-      - default: asc
+      - default: desc
         description: Sort order (asc, desc)
         in: query
         name: order
@@ -894,7 +982,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new football team with the provided details
+      description: Add a new team with unique name
       parameters:
       - description: Team data
         in: body
@@ -913,10 +1001,20 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
         "409":
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Create a new team
       tags:
       - Teams
@@ -934,6 +1032,14 @@ paths:
       responses:
         "204":
           description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -942,6 +1048,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Delete a team
       tags:
       - Teams
@@ -994,6 +1102,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -1002,6 +1118,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Update a team
       tags:
       - Teams
@@ -1052,10 +1170,20 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Revert team to previous version
       tags:
       - Teams

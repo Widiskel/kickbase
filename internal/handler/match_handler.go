@@ -9,25 +9,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// MatchHandler handles match-related HTTP requests
 type MatchHandler struct {
 	matchService interfaces.MatchService
 }
 
-// NewMatchHandler creates a new MatchHandler
 func NewMatchHandler(matchService interfaces.MatchService) *MatchHandler {
 	return &MatchHandler{matchService: matchService}
 }
 
 // CreateMatch godoc
 // @Summary Schedule a new match
-// @Description Create a match schedule between two teams
+// @Description Schedule a match between two different teams
 // @Tags Matches
 // @Accept json
 // @Produce json
-// @Param match body CreateMatchRequest true "Match data"
+// @Security BearerAuth
+// @Param match body CreateMatchRequest true "Match schedule data"
 // @Success 201 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
 // @Router /api/matches [post]
 func (h *MatchHandler) CreateMatch(c *gin.Context) {
 	var req CreateMatchRequest
@@ -39,12 +41,12 @@ func (h *MatchHandler) CreateMatch(c *gin.Context) {
 	match := req.ToDomain()
 	if err := h.matchService.CreateMatch(match); err != nil {
 		switch err.Error() {
-		case "home team and away team must be different":
+		case "home and away teams must be different", "invalid match date format", "invalid match time format":
 			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 		case "home team not found", "away team not found":
 			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
 		default:
-			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create match", nil)
+			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to schedule match", nil)
 		}
 		return
 	}
@@ -60,15 +62,16 @@ func (h *MatchHandler) CreateMatch(c *gin.Context) {
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
 // @Param team_id query string false "Filter by team ID (home or away)"
-// @Param status query string false "Filter by status (scheduled, completed, cancelled, deferred)"
-// @Param date_from query string false "Filter matches starting from date (YYYY-MM-DD)"
-// @Param date_to query string false "Filter matches up to date (YYYY-MM-DD)"
-// @Param sort_by query string false "Sort field (match_date, match_time, created_at)" default(match_date)
-// @Param order query string false "Sort order (asc, desc)" default(asc)
+// @Param status query string false "Filter by match status (scheduled, completed, cancelled, deferred)"
+// @Param date_from query string false "Filter matches from date (YYYY-MM-DD)"
+// @Param date_to query string false "Filter matches to date (YYYY-MM-DD)"
+// @Param sort_by query string false "Sort field (match_date, created_at)" default(match_date)
+// @Param order query string false "Sort order (asc, desc)" default(desc)
 // @Success 200 {object} PaginatedResponse
 // @Router /api/matches [get]
 func (h *MatchHandler) ListMatches(c *gin.Context) {
 	page, limit := GetPagination(c)
+
 	opts := interfaces.MatchFilterOptions{
 		Page:     page,
 		Limit:    limit,
@@ -116,10 +119,13 @@ func (h *MatchHandler) GetMatch(c *gin.Context) {
 // @Tags Matches
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "Match ID"
 // @Param status body UpdateMatchStatusRequest true "New status"
 // @Success 200 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /api/matches/{id}/status [patch]
@@ -175,10 +181,13 @@ func (h *MatchHandler) GetMatchHistory(c *gin.Context) {
 // @Tags Matches
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "Match ID"
 // @Param request body RevertRequest true "Target version"
 // @Success 200 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Router /api/matches/{id}/revert [post]
 func (h *MatchHandler) RevertMatch(c *gin.Context) {

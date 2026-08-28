@@ -8,25 +8,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// TeamHandler handles team-related HTTP requests
 type TeamHandler struct {
 	teamService interfaces.TeamService
 }
 
-// NewTeamHandler creates a new TeamHandler
 func NewTeamHandler(teamService interfaces.TeamService) *TeamHandler {
 	return &TeamHandler{teamService: teamService}
 }
 
 // CreateTeam godoc
 // @Summary Create a new team
-// @Description Create a new football team with the provided details
+// @Description Add a new team with unique name
 // @Tags Teams
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param team body CreateTeamRequest true "Team data"
 // @Success 201 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /api/teams [post]
 func (h *TeamHandler) CreateTeam(c *gin.Context) {
@@ -38,9 +39,12 @@ func (h *TeamHandler) CreateTeam(c *gin.Context) {
 
 	team := req.ToDomain()
 	if err := h.teamService.CreateTeam(team); err != nil {
-		if err.Error() == "team name already exists" {
+		switch err.Error() {
+		case "team name already exists":
 			RespondError(c, http.StatusConflict, "CONFLICT", err.Error(), nil)
-		} else {
+		case "invalid founded year":
+			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
+		default:
 			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create team", nil)
 		}
 		return
@@ -56,14 +60,15 @@ func (h *TeamHandler) CreateTeam(c *gin.Context) {
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
-// @Param name query string false "Filter by team name"
-// @Param city query string false "Filter by headquarters city"
-// @Param sort_by query string false "Sort field (name, city, founded_year, created_at)" default(created_at)
-// @Param order query string false "Sort order (asc, desc)" default(asc)
+// @Param name query string false "Filter by team name (case-insensitive)"
+// @Param city query string false "Filter by city"
+// @Param sort_by query string false "Sort field (name, founded_year, city, created_at)" default(created_at)
+// @Param order query string false "Sort order (asc, desc)" default(desc)
 // @Success 200 {object} PaginatedResponse
 // @Router /api/teams [get]
 func (h *TeamHandler) ListTeams(c *gin.Context) {
 	page, limit := GetPagination(c)
+
 	opts := interfaces.TeamFilterOptions{
 		Page:    page,
 		Limit:   limit,
@@ -109,10 +114,13 @@ func (h *TeamHandler) GetTeam(c *gin.Context) {
 // @Tags Teams
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "Team ID"
 // @Param team body UpdateTeamRequest true "Team data with version"
 // @Success 200 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /api/teams/{id} [put]
@@ -146,8 +154,11 @@ func (h *TeamHandler) UpdateTeam(c *gin.Context) {
 // @Description Soft delete a team (only if no active players)
 // @Tags Teams
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "Team ID"
 // @Success 204 "No Content"
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /api/teams/{id} [delete]
@@ -195,10 +206,13 @@ func (h *TeamHandler) GetTeamHistory(c *gin.Context) {
 // @Tags Teams
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "Team ID"
 // @Param request body RevertRequest true "Target version"
 // @Success 200 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Router /api/teams/{id}/revert [post]
 func (h *TeamHandler) RevertTeam(c *gin.Context) {

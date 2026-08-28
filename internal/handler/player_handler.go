@@ -8,25 +8,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// PlayerHandler handles player-related HTTP requests
 type PlayerHandler struct {
 	playerService interfaces.PlayerService
 }
 
-// NewPlayerHandler creates a new PlayerHandler
 func NewPlayerHandler(playerService interfaces.PlayerService) *PlayerHandler {
 	return &PlayerHandler{playerService: playerService}
 }
 
 // CreatePlayer godoc
 // @Summary Create a new player
-// @Description Add a new player to a team
+// @Description Add a player to a team with eFootball position and playstyle validation
 // @Tags Players
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param player body CreatePlayerRequest true "Player data"
 // @Success 201 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /api/players [post]
 func (h *PlayerHandler) CreatePlayer(c *gin.Context) {
@@ -43,7 +45,7 @@ func (h *PlayerHandler) CreatePlayer(c *gin.Context) {
 			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
 		case "jersey number already exists in this team":
 			RespondError(c, http.StatusConflict, "CONFLICT", err.Error(), nil)
-		case "invalid position":
+		case "invalid position", "invalid height (must be between 150-220 cm)", "invalid weight (must be between 40-150 kg)", "invalid jersey number (must be between 1-99)", "invalid playstyle for position":
 			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 		default:
 			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create player", nil)
@@ -59,34 +61,31 @@ func (h *PlayerHandler) CreatePlayer(c *gin.Context) {
 // @Description Get a paginated list of players with optional team, position, name filtering and sorting
 // @Tags Players
 // @Produce json
+// @Param team_id query string false "Filter by team ID"
+// @Param position query string false "Filter by position (e.g. CF, LWF, CB, GK)"
+// @Param name query string false "Filter by player name (case-insensitive)"
+// @Param sort_by query string false "Sort field (name, jersey_number, height, weight, created_at)" default(created_at)
+// @Param order query string false "Sort order (asc, desc)" default(desc)
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
-// @Param team_id query string false "Filter by team ID"
-// @Param name query string false "Filter by player name"
-// @Param position query string false "Filter by position (CF, SS, CMF, CB, GK, etc.)"
-// @Param sort_by query string false "Sort field (name, jersey_number, height, weight, created_at)" default(jersey_number)
-// @Param order query string false "Sort order (asc, desc)" default(asc)
 // @Success 200 {object} PaginatedResponse
 // @Router /api/players [get]
 func (h *PlayerHandler) ListPlayers(c *gin.Context) {
 	page, limit := GetPagination(c)
+
 	opts := interfaces.PlayerFilterOptions{
-		Page:     page,
-		Limit:    limit,
-		TeamID:   c.Query("team_id"),
-		Name:     c.Query("name"),
-		Position: c.Query("position"),
-		SortBy:   c.Query("sort_by"),
-		Order:    c.Query("order"),
+		Page:      page,
+		Limit:     limit,
+		TeamID:    c.Query("team_id"),
+		Position:  c.Query("position"),
+		Name:      c.Query("name"),
+		SortBy:    c.Query("sort_by"),
+		Order:     c.Query("order"),
 	}
 
 	players, total, err := h.playerService.ListPlayers(opts)
 	if err != nil {
-		if err.Error() == "team not found" {
-			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
-		} else {
-			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list players", nil)
-		}
+		RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list players", nil)
 		return
 	}
 
@@ -95,7 +94,7 @@ func (h *PlayerHandler) ListPlayers(c *gin.Context) {
 
 // GetPlayer godoc
 // @Summary Get a player by ID
-// @Description Get a single player by its ID
+// @Description Get a single player by their ID
 // @Tags Players
 // @Produce json
 // @Param id path string true "Player ID"
@@ -120,10 +119,13 @@ func (h *PlayerHandler) GetPlayer(c *gin.Context) {
 // @Tags Players
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "Player ID"
 // @Param player body UpdatePlayerRequest true "Player data with version"
 // @Success 200 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /api/players/{id} [put]
@@ -161,8 +163,11 @@ func (h *PlayerHandler) UpdatePlayer(c *gin.Context) {
 // @Description Soft delete a player (only if no goal records)
 // @Tags Players
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "Player ID"
 // @Success 204 "No Content"
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Router /api/players/{id} [delete]
@@ -173,7 +178,7 @@ func (h *PlayerHandler) DeletePlayer(c *gin.Context) {
 		switch err.Error() {
 		case "player not found":
 			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
-		case "cannot delete player with goal records":
+		case "cannot delete player with goal records", "cannot delete player with existing goal records":
 			RespondError(c, http.StatusConflict, "CONFLICT", err.Error(), nil)
 		default:
 			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to delete player", nil)
@@ -210,10 +215,13 @@ func (h *PlayerHandler) GetPlayerHistory(c *gin.Context) {
 // @Tags Players
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "Player ID"
 // @Param request body RevertRequest true "Target version"
 // @Success 200 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Router /api/players/{id}/revert [post]
 func (h *PlayerHandler) RevertPlayer(c *gin.Context) {
