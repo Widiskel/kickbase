@@ -28,6 +28,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - app-logs:/var/log/kickbase
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -55,6 +57,32 @@ services:
     networks:
       - kickbase-network
 
+  loki:
+    image: grafana/loki:latest
+    container_name: kickbase-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./deploy/loki/loki-config.yml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - kickbase-network
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: kickbase-promtail
+    restart: unless-stopped
+    volumes:
+      - app-logs:/var/log/kickbase
+      - ./deploy/promtail/promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+      - app
+    networks:
+      - kickbase-network
+
   grafana:
     image: grafana/grafana:latest
     container_name: kickbase-grafana
@@ -72,11 +100,13 @@ services:
       - ./deploy/grafana/dashboards:/etc/grafana/provisioning/dashboards
     depends_on:
       - prometheus
+      - loki
     networks:
       - kickbase-network
 
 volumes:
   pgdata:
+  app-logs:
 
 networks:
   kickbase-network:

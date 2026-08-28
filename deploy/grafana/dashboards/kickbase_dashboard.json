@@ -377,6 +377,56 @@
         "x": 0,
         "y": 5
       },
+      "id": 600,
+      "title": "📜 Live Application Logs & Request Tracing (Loki Stream)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 50,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "{job=\"kickbase-app\"}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Live Request & Error Logs Stream (Trace by Request ID)",
+      "type": "logs"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
       "id": 500,
       "title": "🚨 Error Tracking, Failed Requests & Traceability Breakdown",
       "type": "row"
@@ -417,7 +467,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 6
+        "y": 16
       },
       "id": 20,
       "options": {
@@ -483,7 +533,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 6
+        "y": 16
       },
       "id": 21,
       "options": {
@@ -553,7 +603,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 6
+        "y": 16
       },
       "id": 22,
       "options": {
@@ -621,7 +671,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 6
+        "y": 16
       },
       "id": 23,
       "options": {
@@ -659,7 +709,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 10
+        "y": 20
       },
       "id": 200,
       "title": "⚽ Football Domain & Business Metrics (Live PostgreSQL Database Gauges)",
@@ -693,7 +743,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 11
+        "y": 21
       },
       "id": 1,
       "options": {
@@ -755,7 +805,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 11
+        "y": 21
       },
       "id": 2,
       "options": {
@@ -817,7 +867,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 11
+        "y": 21
       },
       "id": 3,
       "options": {
@@ -879,7 +929,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 11
+        "y": 21
       },
       "id": 4,
       "options": {
@@ -919,7 +969,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 25
       },
       "id": 300,
       "title": "🚀 HTTP Traffic, Throughput & Request Latency (End-to-End API Observability)",
@@ -953,7 +1003,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 26
       },
       "id": 5,
       "options": {
@@ -1011,7 +1061,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 26
       },
       "id": 6,
       "options": {
@@ -1051,7 +1101,8 @@
     "kickbase",
     "football",
     "production",
-    "observability"
+    "observability",
+    "loki"
   ],
   "time": {
     "from": "now-15m",
@@ -1061,5 +1112,5 @@
   "timezone": "browser",
   "title": "Kickbase API - Executive Production Dashboard",
   "uid": "kickbase-overview",
-  "version": 4
+  "version": 5
 }

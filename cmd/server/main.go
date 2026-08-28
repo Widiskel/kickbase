@@ -1,6 +1,9 @@
 package main
 
 import (
+	"io"
+	"os"
+
 	_ "kickbase/docs"
 	"kickbase/internal/config"
 	"kickbase/internal/database"
@@ -26,7 +29,19 @@ func main() {
 	// Load config
 	cfg := config.Load()
 
-	// Setup logger
+	// Setup multi-writer logger (Stdout + File for Promtail/Loki)
+	logDir := "/var/log/kickbase"
+	var writers []io.Writer = []io.Writer{os.Stdout}
+
+	if err := os.MkdirAll(logDir, 0755); err == nil {
+		if logFile, err := os.OpenFile(logDir+"/app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+			writers = append(writers, logFile)
+		}
+	}
+
+	multiWriter := io.MultiWriter(writers...)
+	log.Logger = zerolog.New(multiWriter).With().Timestamp().Logger()
+
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	switch cfg.LogLevel {
 	case "debug":

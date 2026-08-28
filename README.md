@@ -126,7 +126,9 @@ go run cmd/server/main.go
 | **Prometheus Pre-Loaded Graphs** | [http://localhost:9090/graph?g0.expr=kickbase%3Ahttp_requests%3Arate1m&g0.tab=0&g1.expr=kickbase%3Ahttp_errors%3Aratio_pct&g1.tab=0&g2.expr=kickbase%3Alatency%3Ap95_seconds&g2.tab=0&g3.expr=kickbase%3Amemory%3Aheap_mb&g3.tab=0](http://localhost:9090/graph?g0.expr=kickbase%3Ahttp_requests%3Arate1m&g0.tab=0&g1.expr=kickbase%3Ahttp_errors%3Aratio_pct&g1.tab=0&g2.expr=kickbase%3Alatency%3Ap95_seconds&g2.tab=0&g3.expr=kickbase%3Amemory%3Aheap_mb&g3.tab=0) | - | 4 Pre-loaded Charts (Rate, Errors, Latency, RAM) |
 | **Prometheus Pre-Configured Rules** | [http://localhost:9090/rules](http://localhost:9090/rules) | - | 11 Live Evaluated Prometheus Recording Rules |
 | **Prometheus Targets Status** | [http://localhost:9090/targets](http://localhost:9090/targets) | - | Live Target Scraping Health (`app:8080`) |
-| **Grafana Dashboard** | [http://localhost:3000](http://localhost:3000) | `admin` / `admin` | Pre-configured Executive Dashboard |
+| **Grafana Dashboard** | [http://localhost:3000](http://localhost:3000) | `admin` / `admin` | Pre-configured Executive Dashboard + Live Logs |
+| **Grafana Explore (Logs & Trace)** | [http://localhost:3000/explore](http://localhost:3000/explore) | `admin` / `admin` | Search & Filter Live Logs by Request ID / Level |
+| **Loki Log Aggregator** | `localhost:3100` | - | Real-time JSON Log Stream Endpoint |
 | **PostgreSQL Database** | `localhost:5432` | `postgres` / `postgres` | Database `kickbase` (Auto-migrated & Seeded) |
 
 ---
