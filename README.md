@@ -167,7 +167,7 @@ Database seeder otomatis mengisi akun bawaan berikut saat pertama kali dijalanka
 - `POST /api/auth/refresh` — Rotasi refresh token dan penerbitan token baru (Revocation protection).
 
 ### 2. Team Management (`/api/teams`)
-- `GET /api/teams` — List tim dengan pagination, filter (`name`, `city`), dan sorting (`sort_by=founded_year&order=desc`). *(Public)*
+- `GET /api/teams` — List tim dengan pagination, expressive filter (`name=CT:Pers`, `city=EQ:Jakarta`), dan sorting (`sort_by=founded_year&order=desc`). *(Public)*
 - `GET /api/teams/:id` — Detail tim. *(Public)*
 - `GET /api/teams/:id/history` — Riwayat perubahan data tim (Audit Trail). *(Public)*
 - `POST /api/teams` — Tambah tim baru. *(Protected: `teams:create`)*
@@ -176,7 +176,7 @@ Database seeder otomatis mengisi akun bawaan berikut saat pertama kali dijalanka
 - `POST /api/teams/:id/revert` — Rollback ke versi sebelumnya. *(Protected: `teams:revert`)*
 
 ### 3. Player Management (`/api/players`)
-- `GET /api/players` — List pemain dengan filter (`team_id`, `position`, `name`) & sorting (`sort_by=jersey_number&order=asc`). *(Public)*
+- `GET /api/players` — List pemain dengan filter operator (`position=IN:CF,SS`, `height=GT:180`) & sorting (`sort_by=jersey_number&order=asc`). *(Public)*
 - `GET /api/players/:id` — Detail pemain. *(Public)*
 - `GET /api/players/:id/history` — Audit trail riwayat pemain. *(Public)*
 - `POST /api/players` — Tambah pemain baru. *(Protected: `players:create`)*
@@ -189,7 +189,7 @@ Database seeder otomatis mengisi akun bawaan berikut saat pertama kali dijalanka
 - `POST /api/players/:id/revert` — Rollback ke versi sebelumnya. *(Protected: `players:revert`)*
 
 ### 4. Match Scheduling (`/api/matches`)
-- `GET /api/matches` — List pertandingan dengan filter status (`scheduled, completed, cancelled, deferred`), tim, dan rentang tanggal. *(Public)*
+- `GET /api/matches` — List pertandingan dengan filter status (`status=EQ:scheduled`, `status=IN:scheduled,deferred`), tim, dan rentang tanggal (`match_date=BT:2026-09-01,2026-09-30`). *(Public)*
 - `GET /api/matches/:id` — Detail jadwal pertandingan. *(Public)*
 - `GET /api/matches/:id/history` & `POST /api/matches/:id/revert`. *(Public/Protected)*
 - `POST /api/matches` — Jadwalkan pertandingan (`home_team_id != away_team_id`). *(Protected: `matches:create`)*
@@ -205,6 +205,51 @@ Database seeder otomatis mengisi akun bawaan berikut saat pertama kali dijalanka
   - Skor akhir & Status pemenang (`Tim Home Menang`, `Tim Away Menang`, `Draw`).
   - Daftar **Top Scorer** pertandingan beserta jumlah gol yang dicetak.
   - Total **Akumulasi Kemenangan** tim Home dan tim Away sepanjang masa.
+
+---
+
+## 🔍 Advanced Query: Pagination, Sorting & Expressive Filtering
+
+Semua endpoint list (`/api/teams`, `/api/players`, `/api/matches`, `/api/reports/matches`) mendukung parameter query terstandarisasi:
+
+### 1. Paginasi & Respon Envelope
+- `page`: Nomor halaman (integer, default `1`).
+- `limit`: Jumlah item per halaman (integer, default `10`).
+- **Respon**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "items": [...],
+      "total": 110,
+      "page": 1,
+      "limit": 10,
+      "total_pages": 11
+    },
+    "message": "Data retrieved successfully"
+  }
+  ```
+
+### 2. Expressive Operator Syntax (`<field>=<OP>:<VALUE>`)
+Kickbase mendukung 9 operator query canggih yang aman dari SQL Injection:
+
+| Operator | Arti | Contoh Pemakaian | SQL Equivalent |
+|:---:|---|---|---|
+| **`EQ`** | Equals (Sama dengan) | `?city=EQ:Jakarta` | `city = 'Jakarta'` |
+| **`CT`** | Contains (Substring) | `?name=CT:Per` | `LOWER(name) LIKE '%per%'` |
+| **`IN`** | In List | `?position=IN:CF,SS,AMF` | `position IN ('CF','SS','AMF')` |
+| **`NI`** | Not In List | `?position=NI:GK,CB` | `position NOT IN ('GK','CB')` |
+| **`GT`** | Greater Than | `?height=GT:185` | `height > 185` |
+| **`GTE`** | Greater Than Equal | `?founded_year=GTE:1930` | `founded_year >= 1930` |
+| **`LT`** | Less Than | `?weight=LT:70` | `weight < 70` |
+| **`LTE`** | Less Than Equal | `?jersey_number=LTE:20` | `jersey_number <= 20` |
+| **`BT`** | Between (Rentang Nilai) | `?founded_year=BT:1925,1935` | `founded_year BETWEEN 1925 AND 1935` |
+
+*Catatan: Sistem bersifat backward-compatible. Request tanpa operator (misal `?city=Jakarta`) otomatis dievaluasi secara cerdas.*
+
+### 3. Whitelisted Dynamic Sorting
+- `sort_by`: Kolom yang diizinkan (misal: `name`, `founded_year`, `jersey_number`, `height`, `match_date`, `created_at`).
+- `order`: Arah sorting `asc` atau `desc` (default: `desc`).
 
 ---
 
