@@ -147,3 +147,30 @@ func TestResultService_CreateResult_MatchNotFound(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "match not found", err.Error())
 }
+
+func TestResultService_GetResult_Success(t *testing.T) {
+	mockResultRepo := &mocks.MockResultRepository{
+		FindByMatchIDFunc: func(matchID string) (*domain.MatchResult, error) {
+			return &domain.MatchResult{
+				ID:        "res-1",
+				MatchID:   matchID,
+				HomeScore: 2,
+				AwayScore: 1,
+			}, nil
+		},
+	}
+	mockGoalRepo := &mocks.MockGoalRepository{
+		ListByMatchResultFunc: func(resultID string) ([]domain.Goal, error) {
+			return []domain.Goal{
+				{PlayerID: "p-1", GoalTime: "10:00"},
+			}, nil
+		},
+	}
+
+	svc := service.NewResultService(mockResultRepo, nil, mockGoalRepo, nil, nil)
+
+	res, goals, err := svc.GetResult("m-1")
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, goals, 1)
+}

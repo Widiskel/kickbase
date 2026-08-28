@@ -86,6 +86,39 @@ func TestMatchService_CreateMatch_HomeTeamNotFound(t *testing.T) {
 	assert.Equal(t, "home team not found", err.Error())
 }
 
+func TestMatchService_GetMatch(t *testing.T) {
+	mockMatchRepo := &mocks.MockMatchRepository{
+		FindByIDFunc: func(id string) (*domain.Match, error) {
+			return &domain.Match{ID: id, Status: "scheduled"}, nil
+		},
+	}
+
+	svc := service.NewMatchService(mockMatchRepo, nil)
+
+	match, err := svc.GetMatch("m-1")
+	assert.NoError(t, err)
+	assert.NotNil(t, match)
+	assert.Equal(t, "m-1", match.ID)
+}
+
+func TestMatchService_ListMatches(t *testing.T) {
+	mockMatchRepo := &mocks.MockMatchRepository{
+		ListFunc: func(page, limit int) ([]domain.Match, int64, error) {
+			return []domain.Match{
+				{ID: "m-1", Status: "scheduled"},
+				{ID: "m-2", Status: "completed"},
+			}, 2, nil
+		},
+	}
+
+	svc := service.NewMatchService(mockMatchRepo, nil)
+
+	matches, total, err := svc.ListMatches(1, 10)
+	assert.NoError(t, err)
+	assert.Len(t, matches, 2)
+	assert.Equal(t, int64(2), total)
+}
+
 func TestMatchService_UpdateMatchStatus_ValidTransitions(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -125,4 +158,46 @@ func TestMatchService_UpdateMatchStatus_ValidTransitions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMatchService_GetMatchHistory(t *testing.T) {
+	mockMatchRepo := &mocks.MockMatchRepository{
+		GetHistoryFunc: func(matchID string) ([]domain.MatchHistory, error) {
+			return []domain.MatchHistory{
+				{MatchID: matchID, Version: 1, Changes: `{"status":"scheduled"}`},
+			}, nil
+		},
+	}
+
+	svc := service.NewMatchService(mockMatchRepo, nil)
+
+	histories, err := svc.GetMatchHistory("m-1")
+	assert.NoError(t, err)
+	assert.Len(t, histories, 1)
+}
+
+func TestMatchService_RevertMatch(t *testing.T) {
+	mockMatchRepo := &mocks.MockMatchRepository{
+		FindByIDFunc: func(id string) (*domain.Match, error) {
+			return &domain.Match{ID: id, Status: "cancelled", Version: 2}, nil
+		},
+		GetHistoryByVersionFunc: func(matchID string, version int) (*domain.MatchHistory, error) {
+			return &domain.MatchHistory{
+				MatchID: matchID,
+				Version: 1,
+				Changes: `{"status":"scheduled","match_date":"2026-09-01","match_time":"19:00:00"}`,
+			}, nil
+		},
+		UpdateFunc: func(m *domain.Match) error {
+			return nil
+		},
+		CreateHistoryFunc: func(h *domain.MatchHistory) error {
+			return nil
+		},
+	}
+
+	svc := service.NewMatchService(mockMatchRepo, nil)
+
+	err := svc.RevertMatch("m-1", 1)
+	assert.NoError(t, err)
 }

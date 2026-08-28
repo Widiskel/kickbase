@@ -139,10 +139,10 @@ func (s *TeamService) GetTeamHistory(teamID string) ([]domain.TeamHistory, error
 func (s *TeamService) RevertTeam(teamID string, targetVersion int) error {
 	// Get current team
 	team, err := s.teamRepo.FindByID(teamID)
-	if err != nil {
+	if err != nil || team == nil {
 		// Try to find in soft-deleted records
 		team, err = s.teamRepo.FindByIDIncludingDeleted(teamID)
-		if err != nil {
+		if err != nil || team == nil {
 			return errors.New("team not found")
 		}
 	}

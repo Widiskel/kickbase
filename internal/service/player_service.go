@@ -165,10 +165,10 @@ func (s *PlayerService) GetPlayerHistory(playerID string) ([]domain.PlayerHistor
 func (s *PlayerService) RevertPlayer(playerID string, targetVersion int) error {
 	// Get current player
 	player, err := s.playerRepo.FindByID(playerID)
-	if err != nil {
+	if err != nil || player == nil {
 		// Try to find in soft-deleted records
 		player, err = s.playerRepo.FindByIDIncludingDeleted(playerID)
-		if err != nil {
+		if err != nil || player == nil {
 			return errors.New("player not found")
 		}
 	}
