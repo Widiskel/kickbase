@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS teams (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_teams_name ON teams(name) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_teams_name ON teams(name);
+CREATE INDEX IF NOT EXISTS idx_teams_city ON teams(city);
 CREATE INDEX IF NOT EXISTS idx_teams_deleted_at ON teams(deleted_at);
 
 -- 4. Team Histories Table (Audit Trail)
@@ -60,8 +61,8 @@ CREATE TABLE IF NOT EXISTS players (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     team_id UUID NOT NULL,
     name VARCHAR(255) NOT NULL,
-    height NUMERIC NOT NULL,
-    weight NUMERIC NOT NULL,
+    height DECIMAL(5,2) NOT NULL,
+    weight DECIMAL(5,2) NOT NULL,
     position VARCHAR(10) NOT NULL,
     playstyle VARCHAR(50),
     jersey_number BIGINT NOT NULL,
@@ -72,6 +73,8 @@ CREATE TABLE IF NOT EXISTS players (
     CONSTRAINT fk_players_team FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE RESTRICT
 );
 CREATE INDEX IF NOT EXISTS idx_players_team_id ON players(team_id);
+CREATE INDEX IF NOT EXISTS idx_players_position ON players(position);
+CREATE INDEX IF NOT EXISTS idx_players_jersey_number ON players(jersey_number);
 CREATE INDEX IF NOT EXISTS idx_players_deleted_at ON players(deleted_at);
 
 -- 6. Player Histories Table (Audit Trail)
@@ -100,6 +103,8 @@ CREATE TABLE IF NOT EXISTS matches (
 );
 CREATE INDEX IF NOT EXISTS idx_matches_home_team_id ON matches(home_team_id);
 CREATE INDEX IF NOT EXISTS idx_matches_away_team_id ON matches(away_team_id);
+CREATE INDEX IF NOT EXISTS idx_matches_match_date ON matches(match_date);
+CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
 
 -- 8. Match Histories Table (Audit Trail)
 CREATE TABLE IF NOT EXISTS match_histories (

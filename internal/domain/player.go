@@ -12,9 +12,9 @@ type Player struct {
 	Name         string         `json:"name" gorm:"not null;size:255"`
 	Height       float64        `json:"height" gorm:"not null"`
 	Weight       float64        `json:"weight" gorm:"not null"`
-	Position     string         `json:"position" gorm:"not null;size:10"`
+	Position     string         `json:"position" gorm:"index;not null;size:10"`
 	Playstyle    *string        `json:"playstyle,omitempty" gorm:"size:50"`
-	JerseyNumber int            `json:"jersey_number" gorm:"not null"`
+	JerseyNumber int            `json:"jersey_number" gorm:"index;not null"`
 	Version      int            `json:"version" gorm:"not null;default:1"`
 	DeletedAt    gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 	CreatedAt    time.Time      `json:"created_at"`

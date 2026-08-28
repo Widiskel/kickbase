@@ -12,7 +12,7 @@ type Team struct {
 	LogoURL     string         `json:"logo_url" gorm:"size:500"`
 	FoundedYear int            `json:"founded_year" gorm:"not null"`
 	Address     string         `json:"address" gorm:"not null;type:text"`
-	City        string         `json:"city" gorm:"not null;size:255"`
+	City        string         `json:"city" gorm:"index;not null;size:255"`
 	Version     int            `json:"version" gorm:"not null;default:1"`
 	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 	CreatedAt   time.Time      `json:"created_at"`
