@@ -46,6 +46,15 @@ func (s *ResultService) CreateResult(input interfaces.CreateResultInput) (*domai
 		return nil, errors.New("match is not in scheduled status")
 	}
 
+	if input.HomeScore < 0 || input.AwayScore < 0 {
+		return nil, errors.New("score cannot be negative")
+	}
+
+	totalExpectedGoals := input.HomeScore + input.AwayScore
+	if len(input.Goals) != totalExpectedGoals {
+		return nil, fmt.Errorf("number of goal entries (%d) must match total score (%d)", len(input.Goals), totalExpectedGoals)
+	}
+
 	// Check no existing result
 	existingResult, _ := s.resultRepo.FindByMatchID(input.MatchID)
 	if existingResult != nil {

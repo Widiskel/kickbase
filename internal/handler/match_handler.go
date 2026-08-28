@@ -41,7 +41,7 @@ func (h *MatchHandler) CreateMatch(c *gin.Context) {
 	match := req.ToDomain()
 	if err := h.matchService.CreateMatch(match); err != nil {
 		switch err.Error() {
-		case "home and away teams must be different", "invalid match date format", "invalid match time format":
+		case "home team and away team must be different", "home and away teams must be different", "invalid match date format", "invalid match time format":
 			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 		case "home team not found", "away team not found":
 			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)

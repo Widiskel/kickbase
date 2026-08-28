@@ -46,12 +46,12 @@ func (h *ResultHandler) CreateMatchResult(c *gin.Context) {
 			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
 		case "match result already exists":
 			RespondError(c, http.StatusConflict, "CONFLICT", err.Error(), nil)
-		case "can only report result for scheduled matches":
+		case "can only report result for scheduled matches", "match is not in scheduled status":
 			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
-		case "scores cannot be negative", "number of goals does not match total score":
+		case "score cannot be negative", "scores cannot be negative", "number of goals does not match total score":
 			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 		default:
-			if strings.Contains(err.Error(), "does not belong to either team") || strings.Contains(err.Error(), "player") {
+			if strings.Contains(err.Error(), "must match total score") || strings.Contains(err.Error(), "does not belong to either team") || strings.Contains(err.Error(), "player") {
 				RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 			} else {
 				RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create result", nil)
