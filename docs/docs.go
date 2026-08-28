@@ -930,7 +930,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Match ID",
                         "name": "matchId",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],

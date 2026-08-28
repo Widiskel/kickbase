@@ -92,6 +92,9 @@ func (s *PlayerService) UpdatePlayer(player *domain.Player) error {
 		return errors.New("version mismatch")
 	}
 
+	// Preserve team ID from existing record
+	player.TeamID = existing.TeamID
+
 	// Check jersey uniqueness if changed
 	if player.JerseyNumber != existing.JerseyNumber {
 		unique, err := s.playerRepo.CheckJerseyUnique(player.TeamID, player.JerseyNumber, player.ID)

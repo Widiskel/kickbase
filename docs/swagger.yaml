@@ -827,7 +827,7 @@ paths:
       description: Get the result of a specific match
       parameters:
       - description: Match ID
-        in: query
+        in: path
         name: matchId
         required: true
         type: string

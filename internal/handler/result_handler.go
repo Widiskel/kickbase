@@ -64,15 +64,18 @@ func (h *ResultHandler) CreateMatchResult(c *gin.Context) {
 // @Description Get the result of a specific match
 // @Tags Results
 // @Produce json
-// @Param matchId query string true "Match ID"
+// @Param matchId path string true "Match ID"
 // @Success 200 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Router /api/results/{matchId} [get]
 func (h *ResultHandler) GetMatchResult(c *gin.Context) {
-	matchID := c.Query("match_id")
+	matchID := c.Param("matchId")
 	if matchID == "" {
-		RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "match_id query parameter is required", nil)
+		matchID = c.Query("match_id")
+	}
+	if matchID == "" {
+		RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "match_id parameter is required", nil)
 		return
 	}
 
