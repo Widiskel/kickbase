@@ -62,6 +62,10 @@ services:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: "/etc/grafana/provisioning/dashboards/kickbase_dashboard.json"
     volumes:
       - ./deploy/grafana/datasources:/etc/grafana/provisioning/datasources
       - ./deploy/grafana/dashboards:/etc/grafana/provisioning/dashboards
