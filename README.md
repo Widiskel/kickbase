@@ -17,7 +17,7 @@ A production-grade RESTful API backend for managing amateur football teams, play
 - **Granular RBAC Domain Permissions**: 24 distinct permissions (`<domain>:<action>`: Create, Read, Update, Delete, Revert) across 6 domains (`teams`, `players`, `matches`, `results`, `reports`, `users`).
 - **Pagination, Filtering & Sorting**: Dynamic query capabilities on all list endpoints (`page`, `limit`, `sort_by`, `order`, search, and domain filters).
 - **Audit Trail & Revert**: Dedicated `_history` tables tracking JSONB changes and version increments with one-click snapshot rollback.
-- **Full Observability**: Structured JSON logging (zerolog + Request ID tracking), Prometheus metrics (`/metrics`), and pre-provisioned Grafana dashboards.
+- **Full Observability**: Structured JSON logging (zerolog + Request ID tracing), Prometheus metrics (`/metrics`), and pre-provisioned Grafana dashboards.
 
 ---
 
@@ -62,7 +62,7 @@ psql -U postgres -c "CREATE DATABASE kickbase;"
 go mod tidy
 swag init -g cmd/server/main.go -o docs
 
-# 5. Run Server
+# 5. Run Server (Auto-migrates & seeds initial data)
 go run cmd/server/main.go
 ```
 
@@ -72,7 +72,7 @@ go run cmd/server/main.go
 
 | Service | Local URL | Default Credentials | Description |
 |---|---|---|---|
-| **API Server** | [http://localhost:8080](http://localhost:8080) | - | Kickbase REST API |
+| **API Server** | [http://localhost:8080](http://localhost:8080) | - | Kickbase REST API Server |
 | **Interactive Swagger UI** | [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html) | Bearer Token (See below) | OpenAPI 2.0 Web Interface |
 | **API Health Check** | [http://localhost:8080/api/health](http://localhost:8080/api/health) | - | Live DB & Service health |
 | **Prometheus Live Metrics** | [http://localhost:8080/metrics](http://localhost:8080/metrics) | - | Prometheus exposition endpoint |
@@ -83,27 +83,26 @@ go run cmd/server/main.go
 
 ## 🔑 Demo Credentials & RBAC Permission Matrix
 
-Kamu dapat langsung mencoba kredensial demo berikut atau mendaftarkan akun baru melalui endpoint `POST /api/auth/register`:
+Database seeder otomatis mengisi akun bawaan berikut saat pertama kali dijalankan:
 
 | Role | Demo Username | Demo Password | Granted Permissions |
 |---|---|---|---|
-| **Admin** | `admin_demo` | `password123` | **All 24 Permissions (`*`)**: Full Create, Read, Update, Delete, Revert on all domains |
-| **Staff** | `staff_demo` | `password123` | **Create, Read, Update**: Tidak memiliki permission `delete` & `revert` |
-| **Viewer** | `viewer_demo` | `password123` | **Read-Only (`*:read`)**: Hanya dapat membaca data publik |
+| **Admin** | `admin` | `password123` | **All 24 Permissions (`*`)**: Full Create, Read, Update, Delete, Revert on all domains |
+| **Staff** | `staff` | `password123` | **Create, Read, Update**: Tidak memiliki permission `delete` & `revert` |
+| **Viewer** | `viewer` | `password123` | **Read-Only (`*:read`)**: Hanya dapat membaca data publik |
 
 ### Cara Menggunakan Token di Swagger UI:
 1. Buka [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html).
 2. Buka endpoint **`POST /api/auth/login`**, klik **Try it out**, dan masukkan payload:
    ```json
    {
-     "username": "admin_demo",
+     "username": "admin",
      "password": "password123"
    }
    ```
-   *(Jika user belum terdaftar, panggil `POST /api/auth/register` terlebih dahulu dengan role `admin`)*.
 3. Salin nilai `access_token` dari respons JSON.
 4. Klik tombol hijau **Authorize 🔓** di kanan atas halaman Swagger UI.
-5. Masukkan format: `Bearer <access_token>` (atau cukup tokennya saja) lalu klik **Authorize**.
+5. Masukkan format: `Bearer <access_token>` (atau tokennya saja) lalu klik **Authorize**.
 6. Seluruh endpoint data mutasi (POST/PUT/DELETE/PATCH) sekarang siap diuji secara interaktif!
 
 ---
@@ -157,6 +156,45 @@ Kamu dapat langsung mencoba kredensial demo berikut atau mendaftarkan akun baru 
 
 ---
 
+## 📊 Observability, Logging & Tracing
+
+Sistem Kickbase mengimplementasikan standar observabilitas enterprise tiga pilar (Logs, Metrics, Traces):
+
+### 1. Structured JSON Logging & Request Tracing
+- **Library**: `github.com/rs/zerolog`
+- **Request Tracing**: Setiap request yang masuk secara otomatis diberi UUID unik melalui middleware dan diteruskan di header `X-Request-ID`.
+- **Log Payload Format**:
+  ```json
+  {
+    "level": "info",
+    "request_id": "e8c5a652-4ca8-4609-87e9-9b2eb77c5140",
+    "method": "POST",
+    "path": "/api/auth/login",
+    "status": 200,
+    "latency": 49.16,
+    "client_ip": "192.0.2.1",
+    "time": "2026-08-28T10:32:53+07:00",
+    "message": "request completed"
+  }
+  ```
+
+### 2. Prometheus Time-Series Metrics (`/metrics`)
+- **Library**: `github.com/prometheus/client_golang`
+- **Application & HTTP Metrics**:
+  - `http_requests_total{method, path, status}` (Counter) — Menghitung total incoming request per endpoint dan status code.
+  - `http_request_duration_seconds{method, path}` (Histogram) — Mengukur distribusi latensi request (p50, p90, p99).
+- **Live Dynamic Business Gauges** (Terkoneksi real-time ke Database):
+  - `kickbase_teams_total` / `teams_total` — Jumlah tim aktif saat ini.
+  - `kickbase_players_total` / `players_total` — Jumlah pemain aktif di seluruh klub.
+  - `kickbase_matches_total` / `matches_total` — Total seluruh jadwal pertandingan.
+  - `kickbase_matches_completed_total` — Total pertandingan yang telah selesai dengan laporan hasil.
+
+### 3. Grafana Pre-Configured Dashboards
+- **URL**: [http://localhost:3000](http://localhost:3000) (Login: `admin` / `admin`).
+- **Provisioning Otomatis**: Datasource Prometheus (`http://prometheus:9090`) dan dashboard Kickbase di-load otomatis saat container pertama kali menyala tanpa perlu setup manual.
+
+---
+
 ## 🏗️ Architecture & Code Organization
 
 ```
@@ -166,7 +204,7 @@ cmd/
 
 internal/
 ├── config/                    # Environment variable loader
-├── database/                  # PostgreSQL connection & auto-migration
+├── database/                  # PostgreSQL connection, auto-migration & 44-player seeder
 ├── domain/                    # Pure domain models (User, Team, Player, Match, Permission, etc.)
 ├── interfaces/                # Service & Repository interfaces (Dependency Inversion)
 ├── repository/                # GORM repository implementations with dynamic queries
@@ -174,6 +212,11 @@ internal/
 ├── handler/                   # HTTP handlers per domain (<250 lines/file) + DTO definitions
 ├── middleware/                # CORS, Security Headers, JWT Auth, RBAC Guard, Prometheus Metrics
 └── router/                    # Route wiring & dependency injection
+
+migrations/                    # Explicit SQL DDL Migration and Seed Scripts
+├── 000001_init_schema.up.sql
+├── 000001_init_schema.down.sql
+└── 000002_seed_initial_data.up.sql
 
 deploy/
 ├── prometheus.yml             # Prometheus scrape configuration
@@ -201,16 +244,6 @@ go test ./test/unit/service/... -v
 # Jalankan integration test (End-to-End dengan PostgreSQL)
 go test ./test/integration/... -v
 ```
-
----
-
-## 📊 Observability & Metrics
-
-- **Structured Logging**: Seluruh HTTP request di-log dalam format JSON terstruktur menggunakan `zerolog` menyertakan `request_id`, `latency_ms`, `status_code`, dan `client_ip`.
-- **Prometheus Metrics**:
-  - Counter: `http_requests_total{method, path, status}`
-  - Histogram: `http_request_duration_seconds{method, path}`
-  - Dynamic Gauges: `kickbase_teams_total`, `kickbase_players_total`, `kickbase_matches_total`, `kickbase_matches_completed_total` (terkoneksi real-time ke DB).
 
 ---
 
