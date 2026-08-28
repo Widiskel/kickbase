@@ -82,7 +82,7 @@ Playstyle menentukan gaya bermain pemain di lapangan. Setiap playstyle kompatibe
 | 15 | Seluruh endpoint list mendukung Pagination (`page`, `limit`), Dynamic Filtering, dan Sorting (`sort_by`, `order`) | Mencegah bottleneck performa dan memudahkan query data spesifik |
 | 16 | Database menggunakan PostgreSQL 16 dengan GORM | Relational data dengan constraint integritas ketat (FK, Unique Index, Cascading) cocok untuk RDBMS |
 | 17 | Soft delete + Audit Trail via `_history` tables bertipe JSONB indexed | Setiap mutasi tercatat lengkap dengan kemampuan rollback / revert snapshot versi |
-| 18 | Observabilitas terstandarisasi dengan Zerolog JSON logging, Prometheus `/metrics`, dan Grafana | Memudahkan monitoring latensi, request rate, dan metrik bisnis |
+| 18 | Observabilitas terstandarisasi dengan Zerolog JSON logging, Prometheus `/metrics`, Grafana, dan Loki log aggregator | Memudahkan monitoring latensi, request rate, metrik bisnis, dan pencarian log error real-time |
 | 19 | Containerization multi-container via Docker/Podman Compose | Memastikan environment seragam bagi evaluator dalam satu perintah `docker compose up` |
 
 ---
