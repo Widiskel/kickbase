@@ -17,8 +17,8 @@ func NewPlayerHandler(playerService interfaces.PlayerService) *PlayerHandler {
 }
 
 // CreatePlayer godoc
-// @Summary Create a new player
-// @Description Add a player to a team with eFootball position and playstyle validation
+// @Summary Add a new player
+// @Description Add a player to a team with tactical position and playstyle validation
 // @Tags Players
 // @Accept json
 // @Produce json
@@ -45,7 +45,7 @@ func (h *PlayerHandler) CreatePlayer(c *gin.Context) {
 			RespondError(c, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
 		case "jersey number already exists in this team":
 			RespondError(c, http.StatusConflict, "CONFLICT", err.Error(), nil)
-		case "invalid position", "invalid height (must be between 150-220 cm)", "invalid weight (must be between 40-150 kg)", "invalid jersey number (must be between 1-99)", "invalid playstyle for position":
+		case "invalid position", "height must be between 150 and 220 cm", "weight must be between 40 and 150 kg", "jersey number must be between 1 and 99", "invalid height (must be between 150-220 cm)", "invalid weight (must be between 40-150 kg)", "invalid jersey number (must be between 1-99)", "invalid playstyle for position":
 			RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 		default:
 			RespondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create player", nil)

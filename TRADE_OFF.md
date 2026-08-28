@@ -9,8 +9,8 @@ Dokumen ini mencatat semua asumsi, keputusan desain, dan hal-hal yang **tidak di
 | # | Asumsi | Alasan |
 |---|--------|--------|
 | 1 | Logo tim disimpan sebagai string URL, bukan file upload | Tidak ada requirement upload file; infrastruktur CDN/file storage di luar scope |
-| 2 | Posisi pemain mengikuti sistem eFootball 15 Posisi (lihat tabel di bawah) | Dokumen hanya menyebut 4 posisi umum; eFootball lebih detail dan relevan untuk konteks sepakbola Indonesia |
-| 3 | Pemain memiliki atribut `playstyle` yang menentukan gaya bermain eFootball | Menambah kedalaman data pemain; tidak ada di dokumen tapi relevan untuk konteks sepakbola |
+| 2 | Posisi pemain mengikuti Standar Posisi Sepak Bola Modern 15 Posisi (lihat tabel di bawah) | Dokumen hanya menyebut 4 posisi umum; 15 posisi taktis modern memberikan representasi data yang jauh lebih detail dan realistis |
+| 3 | Pemain memiliki atribut `playstyle` yang menentukan karakteristik taktik pemain | Menambah kedalaman profil taktik pemain; tidak ada di dokumen tapi sangat relevan untuk konteks pengelolaan sepak bola profesional |
 | 4 | Nomor punggung unik per tim, bukan per pertandingan | Dokumen: "nomor punggung antar pemain dalam satu tim tidak boleh sama" (rentang 1-99) |
 | 5 | 1 pertandingan hanya melibatkan 2 tim (home dan away) | Format standar sepakbola amatir |
 | 6 | 1 pertandingan hanya bisa memiliki 1 laporan hasil | Tidak ada konsep leg atau replay |
@@ -22,9 +22,9 @@ Dokumen ini mencatat semua asumsi, keputusan desain, dan hal-hal yang **tidak di
 
 ---
 
-## Posisi Pemain (eFootball)
+## Posisi Pemain (Modern Tactical 15 Positions)
 
-Mengikuti sistem posisi eFootball oleh Konami. Dokumen ujian hanya menyebut 4 posisi umum (penyerang, gelandang, bertahan, penjaga gawang), tetapi implementasi menggunakan 15 posisi spesifik eFootball:
+Mengikuti sistem posisi sepak bola modern. Dokumen ujian hanya menyebut 4 posisi umum (penyerang, gelandang, bertahan, penjaga gawang), namun implementasi menyediakan 15 posisi spesifik taktis:
 
 ### Forwards (Penyerang)
 
@@ -61,9 +61,9 @@ Mengikuti sistem posisi eFootball oleh Konami. Dokumen ujian hanya menyebut 4 po
 
 ---
 
-## Playstyle Pemain (eFootball)
+## Playstyle Pemain (Tactical Playstyles)
 
-Playstyle menentukan gaya bermain pemain di lapangan. Setiap playstyle kompatibel dengan posisi tertentu:
+Playstyle menentukan gaya dan peran taktis pemain di lapangan. Setiap playstyle kompatibel dengan posisi tertentu:
 
 - **Forwards**: `Goal Poacher`, `Dummy Runner`, `Fox in the Box`, `Target Man`, `Deep-Lying Forward`, `Prolific Winger`, `Roaming Flank`, `Cross Specialist`.
 - **Midfielders**: `Classic No. 10`, `Creative Playmaker`, `Hole Player`, `Box-to-Box`, `The Destroyer`, `The Orchestrator`, `Anchor Man`.

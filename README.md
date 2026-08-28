@@ -180,7 +180,7 @@ Database seeder otomatis mengisi akun bawaan berikut saat pertama kali dijalanka
 - `GET /api/players/:id` — Detail pemain. *(Public)*
 - `GET /api/players/:id/history` — Audit trail riwayat pemain. *(Public)*
 - `POST /api/players` — Tambah pemain baru. *(Protected: `players:create`)*
-  - **Validasi eFootball 15 Posisi**: `CF, SS, LWF, RWF, AMF, CMF, DMF, LMF, RMF, CB, LB, RB, GK`.
+  - **Validasi 15 Posisi Taktis**: `CF, SS, LWF, RWF, AMF, CMF, DMF, LMF, RMF, CB, LB, RB, GK` dan 22 playstyles taktis.
   - **22 Playstyle Opsional**: `Goal Poacher, Prolific Winger, Box-to-Box, Build Up`, dll.
   - **Unique Jersey Number**: Nomor punggung 1-99 unik per tim.
   - **Rentang Fisik**: Tinggi 150-220 cm, Berat 40-150 kg.

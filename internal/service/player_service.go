@@ -38,9 +38,18 @@ func (s *PlayerService) CreatePlayer(player *domain.Player) error {
 		return errors.New("jersey number already exists in this team")
 	}
 
-	// Validate position
+	// Validate position & physical boundaries
 	if !isValidPosition(player.Position) {
 		return errors.New("invalid position")
+	}
+	if player.Height < 150 || player.Height > 220 {
+		return errors.New("height must be between 150 and 220 cm")
+	}
+	if player.Weight < 40 || player.Weight > 150 {
+		return errors.New("weight must be between 40 and 150 kg")
+	}
+	if player.JerseyNumber < 1 || player.JerseyNumber > 99 {
+		return errors.New("jersey number must be between 1 and 99")
 	}
 
 	player.Version = 1
@@ -106,9 +115,18 @@ func (s *PlayerService) UpdatePlayer(player *domain.Player) error {
 		}
 	}
 
-	// Validate position
+	// Validate position & physical boundaries
 	if !isValidPosition(player.Position) {
 		return errors.New("invalid position")
+	}
+	if player.Height < 150 || player.Height > 220 {
+		return errors.New("height must be between 150 and 220 cm")
+	}
+	if player.Weight < 40 || player.Weight > 150 {
+		return errors.New("weight must be between 40 and 150 kg")
+	}
+	if player.JerseyNumber < 1 || player.JerseyNumber > 99 {
+		return errors.New("jersey number must be between 1 and 99")
 	}
 
 	player.Version = existing.Version + 1

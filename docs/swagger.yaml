@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  internal_handler.CreateMatchRequest:
+  handler.CreateMatchRequest:
     properties:
       away_team_id:
         type: string
@@ -16,7 +16,7 @@ definitions:
     - match_date
     - match_time
     type: object
-  internal_handler.CreatePlayerRequest:
+  handler.CreatePlayerRequest:
     properties:
       height:
         type: number
@@ -40,14 +40,14 @@ definitions:
     - team_id
     - weight
     type: object
-  internal_handler.CreateResultRequest:
+  handler.CreateResultRequest:
     properties:
       away_score:
         minimum: 0
         type: integer
       goals:
         items:
-          $ref: '#/definitions/internal_handler.GoalInput'
+          $ref: '#/definitions/handler.GoalInput'
         type: array
       home_score:
         minimum: 0
@@ -57,7 +57,7 @@ definitions:
     required:
     - match_id
     type: object
-  internal_handler.CreateTeamRequest:
+  handler.CreateTeamRequest:
     properties:
       address:
         type: string
@@ -76,7 +76,7 @@ definitions:
     - founded_year
     - name
     type: object
-  internal_handler.ErrorDetail:
+  handler.ErrorDetail:
     properties:
       code:
         type: string
@@ -84,14 +84,14 @@ definitions:
       message:
         type: string
     type: object
-  internal_handler.ErrorResponse:
+  handler.ErrorResponse:
     properties:
       error:
-        $ref: '#/definitions/internal_handler.ErrorDetail'
+        $ref: '#/definitions/handler.ErrorDetail'
       success:
         type: boolean
     type: object
-  internal_handler.GoalInput:
+  handler.GoalInput:
     properties:
       goal_time:
         type: string
@@ -101,7 +101,7 @@ definitions:
     - goal_time
     - player_id
     type: object
-  internal_handler.LoginRequest:
+  handler.LoginRequest:
     properties:
       password:
         type: string
@@ -111,7 +111,7 @@ definitions:
     - password
     - username
     type: object
-  internal_handler.PaginatedResponse:
+  handler.PaginatedResponse:
     properties:
       data: {}
       limit:
@@ -123,14 +123,14 @@ definitions:
       total:
         type: integer
     type: object
-  internal_handler.RefreshTokenRequest:
+  handler.RefreshTokenRequest:
     properties:
       refresh_token:
         type: string
     required:
     - refresh_token
     type: object
-  internal_handler.RegisterRequest:
+  handler.RegisterRequest:
     properties:
       name:
         type: string
@@ -148,14 +148,14 @@ definitions:
     - password
     - username
     type: object
-  internal_handler.RevertRequest:
+  handler.RevertRequest:
     properties:
       target_version:
         type: integer
     required:
     - target_version
     type: object
-  internal_handler.SuccessResponse:
+  handler.SuccessResponse:
     properties:
       data: {}
       message:
@@ -163,7 +163,7 @@ definitions:
       success:
         type: boolean
     type: object
-  internal_handler.UpdateMatchStatusRequest:
+  handler.UpdateMatchStatusRequest:
     properties:
       status:
         type: string
@@ -173,7 +173,7 @@ definitions:
     - status
     - version
     type: object
-  internal_handler.UpdatePlayerRequest:
+  handler.UpdatePlayerRequest:
     properties:
       height:
         type: number
@@ -197,7 +197,7 @@ definitions:
     - version
     - weight
     type: object
-  internal_handler.UpdateTeamRequest:
+  handler.UpdateTeamRequest:
     properties:
       address:
         type: string
@@ -233,22 +233,22 @@ paths:
         name: credentials
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.LoginRequest'
+          $ref: '#/definitions/handler.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       summary: Login user
       tags:
       - Auth
@@ -263,22 +263,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.RefreshTokenRequest'
+          $ref: '#/definitions/handler.RefreshTokenRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       summary: Refresh access token
       tags:
       - Auth
@@ -293,22 +293,22 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.RegisterRequest'
+          $ref: '#/definitions/handler.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       summary: Register a new user
       tags:
       - Auth
@@ -359,7 +359,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.PaginatedResponse'
+            $ref: '#/definitions/handler.PaginatedResponse'
       summary: List all matches
       tags:
       - Matches
@@ -373,30 +373,30 @@ paths:
         name: match
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.CreateMatchRequest'
+          $ref: '#/definitions/handler.CreateMatchRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Schedule a new match
@@ -417,11 +417,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       summary: Get a match by ID
       tags:
       - Matches
@@ -440,7 +440,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
       summary: Get match history
       tags:
       - Matches
@@ -460,30 +460,30 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.RevertRequest'
+          $ref: '#/definitions/handler.RevertRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Revert match to previous version
@@ -506,34 +506,34 @@ paths:
         name: status
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.UpdateMatchStatusRequest'
+          $ref: '#/definitions/handler.UpdateMatchStatusRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update match status
@@ -582,51 +582,51 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.PaginatedResponse'
+            $ref: '#/definitions/handler.PaginatedResponse'
       summary: List all players
       tags:
       - Players
     post:
       consumes:
       - application/json
-      description: Add a player to a team with eFootball position and playstyle validation
+      description: Add a player to a team with tactical position and playstyle validation
       parameters:
       - description: Player data
         in: body
         name: player
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.CreatePlayerRequest'
+          $ref: '#/definitions/handler.CreatePlayerRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Create a new player
+      summary: Add a new player
       tags:
       - Players
   /api/players/{id}:
@@ -646,19 +646,19 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete a player
@@ -678,11 +678,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       summary: Get a player by ID
       tags:
       - Players
@@ -701,34 +701,34 @@ paths:
         name: player
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.UpdatePlayerRequest'
+          $ref: '#/definitions/handler.UpdatePlayerRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update a player
@@ -749,7 +749,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
       summary: Get player history
       tags:
       - Players
@@ -769,30 +769,30 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.RevertRequest'
+          $ref: '#/definitions/handler.RevertRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Revert player to previous version
@@ -838,7 +838,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.PaginatedResponse'
+            $ref: '#/definitions/handler.PaginatedResponse'
       summary: List all match reports
       tags:
       - Reports
@@ -858,11 +858,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       summary: Get a single match report
       tags:
       - Reports
@@ -877,34 +877,34 @@ paths:
         name: result
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.CreateResultRequest'
+          $ref: '#/definitions/handler.CreateResultRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Report match result
@@ -925,15 +925,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       summary: Get match result
       tags:
       - Results
@@ -975,7 +975,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.PaginatedResponse'
+            $ref: '#/definitions/handler.PaginatedResponse'
       summary: List all teams
       tags:
       - Teams
@@ -989,30 +989,30 @@ paths:
         name: team
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.CreateTeamRequest'
+          $ref: '#/definitions/handler.CreateTeamRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create a new team
@@ -1035,19 +1035,19 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete a team
@@ -1067,11 +1067,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       summary: Get a team by ID
       tags:
       - Teams
@@ -1090,34 +1090,34 @@ paths:
         name: team
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.UpdateTeamRequest'
+          $ref: '#/definitions/handler.UpdateTeamRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update a team
@@ -1138,7 +1138,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
       summary: Get team history
       tags:
       - Teams
@@ -1158,30 +1158,30 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.RevertRequest'
+          $ref: '#/definitions/handler.RevertRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.SuccessResponse'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_handler.ErrorResponse'
+            $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Revert team to previous version

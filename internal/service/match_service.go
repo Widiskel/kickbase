@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"kickbase/internal/domain"
 	"kickbase/internal/interfaces"
@@ -22,6 +23,16 @@ func NewMatchService(matchRepo interfaces.MatchRepository, teamRepo interfaces.T
 }
 
 func (s *MatchService) CreateMatch(match *domain.Match) error {
+	// Validate date & time formats
+	if _, err := time.Parse("2006-01-02", match.MatchDate); err != nil {
+		return errors.New("invalid match date format")
+	}
+	if _, err := time.Parse("15:04:05", match.MatchTime); err != nil {
+		if _, err2 := time.Parse("15:04", match.MatchTime); err2 != nil {
+			return errors.New("invalid match time format")
+		}
+	}
+
 	// Validate home != away
 	if match.HomeTeamID == match.AwayTeamID {
 		return errors.New("home team and away team must be different")
