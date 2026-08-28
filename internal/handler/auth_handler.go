@@ -18,7 +18,7 @@ func NewAuthHandler(authService interfaces.AuthService) *AuthHandler {
 
 // Register godoc
 // @Summary Register a new user
-// @Description Register a new user (admin/staff)
+// @Description Register a new user with role (admin, staff, viewer)
 // @Tags Auth
 // @Accept json
 // @Produce json
@@ -54,7 +54,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 // Login godoc
 // @Summary Login user
-// @Description Authenticate user and return JWT bearer token
+// @Description Authenticate user and return Access Token + Refresh Token + Permissions
 // @Tags Auth
 // @Accept json
 // @Produce json
@@ -70,19 +70,38 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, user, err := h.authService.Login(req.Username, req.Password)
+	authResp, err := h.authService.Login(req.Username, req.Password)
 	if err != nil {
 		RespondError(c, http.StatusUnauthorized, "UNAUTHORIZED", err.Error(), nil)
 		return
 	}
 
-	RespondSuccess(c, LoginResponse{
-		Token: token,
-		User: gin.H{
-			"id":       user.ID,
-			"username": user.Username,
-			"name":     user.Name,
-			"role":     user.Role,
-		},
-	}, "Login successful")
+	RespondSuccess(c, authResp, "Login successful")
+}
+
+// RefreshToken godoc
+// @Summary Refresh access token
+// @Description Exchange a valid refresh token for a new token pair
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body RefreshTokenRequest true "Refresh token payload"
+// @Success 200 {object} SuccessResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Router /api/auth/refresh [post]
+func (h *AuthHandler) RefreshToken(c *gin.Context) {
+	var req RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		RespondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+		return
+	}
+
+	authResp, err := h.authService.RefreshToken(req.RefreshToken)
+	if err != nil {
+		RespondError(c, http.StatusUnauthorized, "UNAUTHORIZED", err.Error(), nil)
+		return
+	}
+
+	RespondSuccess(c, authResp, "Token refreshed successfully")
 }

@@ -166,6 +166,10 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
 type LoginResponse struct {
 	Token string      `json:"token"`
 	User  interface{} `json:"user"`

@@ -49,7 +49,18 @@ type ReportService interface {
 // AuthService defines the interface for authentication & authorization business logic
 type AuthService interface {
 	Register(username, password, name, role string) (*domain.User, error)
-	Login(username, password string) (string, *domain.User, error)
+	Login(username, password string) (*AuthResponse, error)
+	RefreshToken(refreshToken string) (*AuthResponse, error)
+}
+
+// AuthResponse represents the authentication response payload
+type AuthResponse struct {
+	AccessToken  string       `json:"access_token"`
+	RefreshToken string       `json:"refresh_token"`
+	TokenType    string       `json:"token_type"`
+	ExpiresIn    int64        `json:"expires_in"` // in seconds
+	User         *domain.User `json:"user"`
+	Permissions  []string     `json:"permissions"`
 }
 
 // CreateResultInput represents the input for creating a match result

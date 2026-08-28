@@ -123,6 +123,13 @@ definitions:
       total:
         type: integer
     type: object
+  internal_handler.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
   internal_handler.RegisterRequest:
     properties:
       name:
@@ -219,7 +226,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate user and return JWT bearer token
+      description: Authenticate user and return Access Token + Refresh Token + Permissions
       parameters:
       - description: Login credentials
         in: body
@@ -245,11 +252,41 @@ paths:
       summary: Login user
       tags:
       - Auth
+  /api/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchange a valid refresh token for a new token pair
+      parameters:
+      - description: Refresh token payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - Auth
   /api/auth/register:
     post:
       consumes:
       - application/json
-      description: Register a new user (admin/staff)
+      description: Register a new user with role (admin, staff, viewer)
       parameters:
       - description: User registration data
         in: body

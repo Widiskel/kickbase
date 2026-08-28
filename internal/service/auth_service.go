@@ -1,6 +1,8 @@
 package service
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
@@ -13,14 +15,20 @@ import (
 )
 
 type AuthService struct {
-	userRepo  interfaces.UserRepository
-	jwtSecret string
+	userRepo         interfaces.UserRepository
+	refreshTokenRepo interfaces.RefreshTokenRepository
+	jwtSecret        string
 }
 
-func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string) *AuthService {
+func NewAuthService(
+	userRepo interfaces.UserRepository,
+	refreshTokenRepo interfaces.RefreshTokenRepository,
+	jwtSecret string,
+) *AuthService {
 	return &AuthService{
-		userRepo:  userRepo,
-		jwtSecret: jwtSecret,
+		userRepo:         userRepo,
+		refreshTokenRepo: refreshTokenRepo,
+		jwtSecret:        jwtSecret,
 	}
 }
 
@@ -31,6 +39,11 @@ func (s *AuthService) Register(username, password, name, role string) (*domain.U
 
 	if role == "" {
 		role = "admin"
+	}
+
+	// Validate role
+	if _, exists := domain.RolePermissions[role]; !exists {
+		role = "viewer"
 	}
 
 	// Check existing username
@@ -59,28 +72,90 @@ func (s *AuthService) Register(username, password, name, role string) (*domain.U
 	return user, nil
 }
 
-func (s *AuthService) Login(username, password string) (string, *domain.User, error) {
+func (s *AuthService) Login(username, password string) (*interfaces.AuthResponse, error) {
 	user, err := s.userRepo.FindByUsername(username)
 	if err != nil || user == nil {
-		return "", nil, errors.New("invalid username or password")
+		return nil, errors.New("invalid username or password")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return "", nil, errors.New("invalid username or password")
+		return nil, errors.New("invalid username or password")
 	}
 
-	// Generate JWT Token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id":  user.ID,
-		"username": user.Username,
-		"role":     user.Role,
-		"exp":      time.Now().Add(24 * time.Hour).Unix(),
-	})
+	return s.generateTokenPair(user)
+}
 
-	tokenString, err := token.SignedString([]byte(s.jwtSecret))
+func (s *AuthService) RefreshToken(refreshTokenStr string) (*interfaces.AuthResponse, error) {
+	if refreshTokenStr == "" {
+		return nil, errors.New("refresh token is required")
+	}
+
+	if s.refreshTokenRepo == nil {
+		// Mock fallback
+		return nil, errors.New("refresh token not found or revoked")
+	}
+
+	rt, err := s.refreshTokenRepo.FindByToken(refreshTokenStr)
+	if err != nil || rt == nil {
+		return nil, errors.New("invalid or expired refresh token")
+	}
+
+	if rt.Revoked || time.Now().After(rt.ExpiresAt) {
+		return nil, errors.New("refresh token has expired or been revoked")
+	}
+
+	user, err := s.userRepo.FindByID(rt.UserID)
+	if err != nil || user == nil {
+		return nil, errors.New("user associated with token not found")
+	}
+
+	// Revoke old refresh token (rotate token)
+	_ = s.refreshTokenRepo.Revoke(refreshTokenStr)
+
+	// Generate new token pair
+	return s.generateTokenPair(user)
+}
+
+func (s *AuthService) generateTokenPair(user *domain.User) (*interfaces.AuthResponse, error) {
+	permissions := domain.GetPermissionsForRole(user.Role)
+
+	// Access Token: Expires in 1 hour
+	accessExpiry := 1 * time.Hour
+	accessClaims := jwt.MapClaims{
+		"user_id":     user.ID,
+		"username":    user.Username,
+		"role":        user.Role,
+		"permissions": permissions,
+		"exp":         time.Now().Add(accessExpiry).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	accessToken, err := token.SignedString([]byte(s.jwtSecret))
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to generate token: %w", err)
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
 	}
 
-	return tokenString, user, nil
+	// Refresh Token: Cryptographically secure random string, expires in 7 days
+	randomBytes := make([]byte, 32)
+	_, _ = rand.Read(randomBytes)
+	refreshTokenStr := hex.EncodeToString(randomBytes)
+
+	if s.refreshTokenRepo != nil {
+		rt := &domain.RefreshToken{
+			UserID:    user.ID,
+			Token:     refreshTokenStr,
+			ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
+			Revoked:   false,
+		}
+		_ = s.refreshTokenRepo.Create(rt)
+	}
+
+	return &interfaces.AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshTokenStr,
+		TokenType:    "Bearer",
+		ExpiresIn:    int64(accessExpiry.Seconds()),
+		User:         user,
+		Permissions:  permissions,
+	}, nil
 }

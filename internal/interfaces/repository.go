@@ -61,3 +61,11 @@ type UserRepository interface {
 	FindByUsername(username string) (*domain.User, error)
 	FindByID(id string) (*domain.User, error)
 }
+
+// RefreshTokenRepository defines the interface for refresh token data access
+type RefreshTokenRepository interface {
+	Create(token *domain.RefreshToken) error
+	FindByToken(token string) (*domain.RefreshToken, error)
+	Revoke(token string) error
+	RevokeAllForUser(userID string) error
+}

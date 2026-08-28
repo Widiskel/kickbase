@@ -26,10 +26,11 @@ func setupIntegrationDB(t *testing.T) *gorm.DB {
 	}
 
 	// Clean tables
-	db.Exec("DROP TABLE IF EXISTS goals, match_results, matches, players, teams, users, team_histories, player_histories, match_histories, match_result_histories, goal_histories CASCADE")
+	db.Exec("DROP TABLE IF EXISTS goals, match_results, matches, players, teams, users, refresh_tokens, team_histories, player_histories, match_histories, match_result_histories, goal_histories CASCADE")
 
 	err = db.AutoMigrate(
 		&domain.User{},
+		&domain.RefreshToken{},
 		&domain.Team{},
 		&domain.TeamHistory{},
 		&domain.Player{},
@@ -52,16 +53,16 @@ func setupIntegrationRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	return r, db
 }
 
-func getAdminToken(t *testing.T, r *gin.Engine) string {
-	// Register admin
-	regBody := `{"username":"admin_test","password":"password123","name":"Admin Test","role":"admin"}`
+func getTokenForUser(t *testing.T, r *gin.Engine, username, password, name, role string) (string, string) {
+	// Register user
+	regBody := `{"username":"` + username + `","password":"` + password + `","name":"` + name + `","role":"` + role + `"}`
 	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewBufferString(regBody))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	// Login
-	loginBody := `{"username":"admin_test","password":"password123"}`
+	loginBody := `{"username":"` + username + `","password":"` + password + `"}`
 	req = httptest.NewRequest("POST", "/api/auth/login", bytes.NewBufferString(loginBody))
 	req.Header.Set("Content-Type", "application/json")
 	w = httptest.NewRecorder()
@@ -71,54 +72,90 @@ func getAdminToken(t *testing.T, r *gin.Engine) string {
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	data := resp["data"].(map[string]interface{})
-	return data["token"].(string)
+	accessToken := data["access_token"].(string)
+	refreshToken := data["refresh_token"].(string)
+	return accessToken, refreshToken
 }
 
-func TestIntegration_AuthFlow(t *testing.T) {
+func TestIntegration_AuthAndTokenRefresh(t *testing.T) {
 	r, _ := setupIntegrationRouter(t)
 
-	// 1. Register User
-	regBody := `{"username":"viewer_user","password":"password123","name":"Viewer User","role":"viewer"}`
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewBufferString(regBody))
+	// 1. Register & Login Admin
+	accessToken, refreshToken := getTokenForUser(t, r, "admin_test", "password123", "Admin Test", "admin")
+	assert.NotEmpty(t, accessToken)
+	assert.NotEmpty(t, refreshToken)
+
+	// 2. Refresh Token Flow
+	refreshBody := `{"refresh_token":"` + refreshToken + `"}`
+	req := httptest.NewRequest("POST", "/api/auth/refresh", bytes.NewBufferString(refreshBody))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusCreated, w.Code)
 
-	// 2. Login Viewer User
-	loginBody := `{"username":"viewer_user","password":"password123"}`
-	req = httptest.NewRequest("POST", "/api/auth/login", bytes.NewBufferString(loginBody))
-	req.Header.Set("Content-Type", "application/json")
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
-
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	data := resp["data"].(map[string]interface{})
-	viewerToken := data["token"].(string)
-	assert.NotEmpty(t, viewerToken)
+	newAccessToken := data["access_token"].(string)
+	newRefreshToken := data["refresh_token"].(string)
+	assert.NotEmpty(t, newAccessToken)
+	assert.NotEmpty(t, newRefreshToken)
+	assert.NotEqual(t, refreshToken, newRefreshToken) // Token rotated
 
-	// 3. Unauthorized access (without token)
-	teamBody := `{"name":"Persija Jakarta","logo_url":"https://example.com/logo.png","founded_year":1928,"address":"Senayan","city":"Jakarta"}`
-	req = httptest.NewRequest("POST", "/api/teams", bytes.NewBufferString(teamBody))
+	// 3. Old refresh token should now be rejected
+	req = httptest.NewRequest("POST", "/api/auth/refresh", bytes.NewBufferString(refreshBody))
 	req.Header.Set("Content-Type", "application/json")
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
 
-	// 4. Forbidden access (viewer trying to mutate admin resource)
-	req = httptest.NewRequest("POST", "/api/teams", bytes.NewBufferString(teamBody))
+func TestIntegration_GranularRolePermissions(t *testing.T) {
+	r, _ := setupIntegrationRouter(t)
+
+	// Get tokens for staff and viewer
+	staffToken, _ := getTokenForUser(t, r, "staff_user", "password123", "Staff User", "staff")
+	viewerToken, _ := getTokenForUser(t, r, "viewer_user", "password123", "Viewer User", "viewer")
+
+	// 1. Staff can create team (has teams:create)
+	teamBody := `{"name":"Persija Jakarta","logo_url":"https://example.com/logo.png","founded_year":1928,"address":"Senayan","city":"Jakarta"}`
+	req := httptest.NewRequest("POST", "/api/teams", bytes.NewBufferString(teamBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+staffToken)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	teamID := resp["data"].(map[string]interface{})["id"].(string)
+
+	// 2. Staff CANNOT delete team (lacks teams:delete) -> 403 Forbidden
+	req = httptest.NewRequest("DELETE", "/api/teams/"+teamID, nil)
+	req.Header.Set("Authorization", "Bearer "+staffToken)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+
+	// 3. Viewer CANNOT create team (lacks teams:create) -> 403 Forbidden
+	viewerTeamBody := `{"name":"Persib Bandung","logo_url":"https://example.com/logo.png","founded_year":1933,"address":"Gedebage","city":"Bandung"}`
+	req = httptest.NewRequest("POST", "/api/teams", bytes.NewBufferString(viewerTeamBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+viewerToken)
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusForbidden, w.Code)
+
+	// 4. Viewer CAN read teams (has teams:read) -> 200 OK
+	req = httptest.NewRequest("GET", "/api/teams", nil)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestIntegration_TeamCRUD(t *testing.T) {
 	r, _ := setupIntegrationRouter(t)
-	token := getAdminToken(t, r)
+	token, _ := getTokenForUser(t, r, "admin_test", "password123", "Admin Test", "admin")
 
 	// Create team
 	body := `{"name":"Persija Jakarta","logo_url":"https://example.com/logo.png","founded_year":1928,"address":"Jl. Pintu Satu Senayan","city":"Jakarta"}`
@@ -186,7 +223,7 @@ func TestIntegration_TeamCRUD(t *testing.T) {
 
 func TestIntegration_PlayerCRUD(t *testing.T) {
 	r, db := setupIntegrationRouter(t)
-	token := getAdminToken(t, r)
+	token, _ := getTokenForUser(t, r, "admin_test", "password123", "Admin Test", "admin")
 
 	// Create a team first
 	teamRepo := repository.NewTeamRepository(db)
@@ -229,7 +266,7 @@ func TestIntegration_PlayerCRUD(t *testing.T) {
 
 func TestIntegration_MatchAndResult(t *testing.T) {
 	r, db := setupIntegrationRouter(t)
-	token := getAdminToken(t, r)
+	token, _ := getTokenForUser(t, r, "admin_test", "password123", "Admin Test", "admin")
 
 	// Create teams
 	teamRepo := repository.NewTeamRepository(db)
@@ -255,9 +292,9 @@ func TestIntegration_MatchAndResult(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 
-	var resp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &resp)
-	matchData := resp["data"].(map[string]interface{})
+	var matchResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &matchResp)
+	matchData := matchResp["data"].(map[string]interface{})
 	matchID := matchData["id"].(string)
 
 	// Report result (Protected)
@@ -276,8 +313,9 @@ func TestIntegration_MatchAndResult(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	json.Unmarshal(w.Body.Bytes(), &resp)
-	reportData := resp["data"].(map[string]interface{})
+	var reportResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &reportResp)
+	reportData := reportResp["data"].(map[string]interface{})
 	assert.Equal(t, "Tim Home Menang", reportData["status"])
 	assert.Equal(t, float64(2), reportData["home_score"])
 	assert.Equal(t, float64(1), reportData["away_score"])

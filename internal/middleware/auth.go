@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"kickbase/internal/domain"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -70,14 +72,53 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 			return
 		}
 
+		roleStr := ""
+		if r, ok := claims["role"].(string); ok {
+			roleStr = r
+		}
+
 		c.Set("user_id", claims["user_id"])
 		c.Set("username", claims["username"])
-		c.Set("role", claims["role"])
+		c.Set("role", roleStr)
 
 		c.Next()
 	}
 }
 
+// RequirePermission verifies that the authenticated user possesses the specific domain permission
+func RequirePermission(requiredPermission string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		roleVal, exists := c.Get("role")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"error": gin.H{
+					"code":    "UNAUTHORIZED",
+					"message": "Authentication required",
+				},
+			})
+			c.Abort()
+			return
+		}
+
+		role, ok := roleVal.(string)
+		if !ok || !domain.HasPermission(role, requiredPermission) {
+			c.JSON(http.StatusForbidden, gin.H{
+				"success": false,
+				"error": gin.H{
+					"code":    "FORBIDDEN",
+					"message": fmt.Sprintf("Access denied: missing required permission '%s'", requiredPermission),
+				},
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// RequireRole checks that the user has a specific role
 func RequireRole(requiredRole string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")

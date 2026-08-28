@@ -2,6 +2,7 @@ package router
 
 import (
 	"kickbase/internal/config"
+	"kickbase/internal/domain"
 	"kickbase/internal/handler"
 	"kickbase/internal/middleware"
 	"kickbase/internal/repository"
@@ -34,6 +35,7 @@ func Setup(db *gorm.DB) *gin.Engine {
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
+	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
 	teamRepo := repository.NewTeamRepository(db)
 	playerRepo := repository.NewPlayerRepository(db)
 	matchRepo := repository.NewMatchRepository(db)
@@ -41,7 +43,7 @@ func Setup(db *gorm.DB) *gin.Engine {
 	goalRepo := repository.NewGoalRepository(db)
 
 	// Initialize services
-	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret)
+	authSvc := service.NewAuthService(userRepo, refreshTokenRepo, cfg.JWTSecret)
 	teamSvc := service.NewTeamService(teamRepo)
 	playerSvc := service.NewPlayerService(playerRepo, teamRepo)
 	matchSvc := service.NewMatchService(matchRepo, teamRepo)
@@ -56,9 +58,8 @@ func Setup(db *gorm.DB) *gin.Engine {
 	resultHandler := handler.NewResultHandler(resultSvc)
 	reportHandler := handler.NewReportHandler(reportSvc)
 
-	// Auth guards
+	// Auth Guard Middleware
 	authGuard := middleware.AuthMiddleware(cfg.JWTSecret)
-	adminGuard := middleware.RequireRole("admin")
 
 	// API routes
 	api := r.Group("/api")
@@ -68,11 +69,12 @@ func Setup(db *gorm.DB) *gin.Engine {
 			handler.RespondSuccess(c, gin.H{"status": "ok", "database": "connected"}, "Service is healthy")
 		})
 
-		// Auth
+		// Authentication routes
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/refresh", authHandler.RefreshToken)
 		}
 
 		// Teams
@@ -83,11 +85,11 @@ func Setup(db *gorm.DB) *gin.Engine {
 			teams.GET("/:id", teamHandler.GetTeam)
 			teams.GET("/:id/history", teamHandler.GetTeamHistory)
 
-			// Admin operations (Protected)
-			teams.POST("", authGuard, adminGuard, teamHandler.CreateTeam)
-			teams.PUT("/:id", authGuard, adminGuard, teamHandler.UpdateTeam)
-			teams.DELETE("/:id", authGuard, adminGuard, teamHandler.DeleteTeam)
-			teams.POST("/:id/revert", authGuard, adminGuard, teamHandler.RevertTeam)
+			// Permission-protected mutations
+			teams.POST("", authGuard, middleware.RequirePermission(domain.PermTeamsCreate), teamHandler.CreateTeam)
+			teams.PUT("/:id", authGuard, middleware.RequirePermission(domain.PermTeamsUpdate), teamHandler.UpdateTeam)
+			teams.DELETE("/:id", authGuard, middleware.RequirePermission(domain.PermTeamsDelete), teamHandler.DeleteTeam)
+			teams.POST("/:id/revert", authGuard, middleware.RequirePermission(domain.PermTeamsRevert), teamHandler.RevertTeam)
 		}
 
 		// Players
@@ -98,11 +100,11 @@ func Setup(db *gorm.DB) *gin.Engine {
 			players.GET("/:id", playerHandler.GetPlayer)
 			players.GET("/:id/history", playerHandler.GetPlayerHistory)
 
-			// Admin operations (Protected)
-			players.POST("", authGuard, adminGuard, playerHandler.CreatePlayer)
-			players.PUT("/:id", authGuard, adminGuard, playerHandler.UpdatePlayer)
-			players.DELETE("/:id", authGuard, adminGuard, playerHandler.DeletePlayer)
-			players.POST("/:id/revert", authGuard, adminGuard, playerHandler.RevertPlayer)
+			// Permission-protected mutations
+			players.POST("", authGuard, middleware.RequirePermission(domain.PermPlayersCreate), playerHandler.CreatePlayer)
+			players.PUT("/:id", authGuard, middleware.RequirePermission(domain.PermPlayersUpdate), playerHandler.UpdatePlayer)
+			players.DELETE("/:id", authGuard, middleware.RequirePermission(domain.PermPlayersDelete), playerHandler.DeletePlayer)
+			players.POST("/:id/revert", authGuard, middleware.RequirePermission(domain.PermPlayersRevert), playerHandler.RevertPlayer)
 		}
 
 		// Matches
@@ -113,10 +115,10 @@ func Setup(db *gorm.DB) *gin.Engine {
 			matches.GET("/:id", matchHandler.GetMatch)
 			matches.GET("/:id/history", matchHandler.GetMatchHistory)
 
-			// Admin operations (Protected)
-			matches.POST("", authGuard, adminGuard, matchHandler.CreateMatch)
-			matches.PATCH("/:id/status", authGuard, adminGuard, matchHandler.UpdateMatchStatus)
-			matches.POST("/:id/revert", authGuard, adminGuard, matchHandler.RevertMatch)
+			// Permission-protected mutations
+			matches.POST("", authGuard, middleware.RequirePermission(domain.PermMatchesCreate), matchHandler.CreateMatch)
+			matches.PATCH("/:id/status", authGuard, middleware.RequirePermission(domain.PermMatchesUpdate), matchHandler.UpdateMatchStatus)
+			matches.POST("/:id/revert", authGuard, middleware.RequirePermission(domain.PermMatchesRevert), matchHandler.RevertMatch)
 		}
 
 		// Results
@@ -125,8 +127,8 @@ func Setup(db *gorm.DB) *gin.Engine {
 			// Read operations (Public)
 			results.GET("/:matchId", resultHandler.GetMatchResult)
 
-			// Admin operations (Protected)
-			results.POST("", authGuard, adminGuard, resultHandler.CreateMatchResult)
+			// Permission-protected mutations
+			results.POST("", authGuard, middleware.RequirePermission(domain.PermResultsCreate), resultHandler.CreateMatchResult)
 		}
 
 		// Reports (Public read-only aggregations)
