@@ -3,8 +3,10 @@ package integration_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"kickbase/internal/domain"
@@ -19,7 +21,14 @@ import (
 )
 
 func setupIntegrationDB(t *testing.T) *gorm.DB {
-	dsn := "host=127.0.0.1 port=5432 user=postgres password=postgres dbname=kickbase sslmode=disable"
+	host := getEnvOrDefault("DB_HOST", "127.0.0.1")
+	port := getEnvOrDefault("DB_PORT", "5432")
+	user := getEnvOrDefault("DB_USER", "postgres")
+	pass := getEnvOrDefault("DB_PASSWORD", "postgres")
+	name := getEnvOrDefault("DB_NAME", "kickbase")
+	ssl := getEnvOrDefault("DB_SSLMODE", "disable")
+
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", host, port, user, pass, name, ssl)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		t.Skip("PostgreSQL not available, skipping integration test")
@@ -45,6 +54,13 @@ func setupIntegrationDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err)
 
 	return db
+}
+
+func getEnvOrDefault(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultValue
 }
 
 func setupIntegrationRouter(t *testing.T) (*gin.Engine, *gorm.DB) {

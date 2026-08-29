@@ -18,7 +18,7 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: kickbase_test
+          POSTGRES_DB: kickbase
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
@@ -50,7 +50,7 @@ jobs:
           DB_PORT: 5432
           DB_USER: postgres
           DB_PASSWORD: postgres
-          DB_NAME: kickbase_test
+          DB_NAME: kickbase
           DB_SSLMODE: disable
           JWT_SECRET: ci-test-secret-key-must-be-long-enough
 
