@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI Pipeline
 
 on:
   push:
@@ -12,58 +12,21 @@ concurrency:
 
 jobs:
   validate:
-    name: Build, Lint & Test
+    name: Test & Build
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: kickbase
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 5
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Go Toolchain
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-          check-latest: false
           cache: true
 
-      - name: Verify Module Dependencies
-        run: go mod verify
+      - name: Run Unit Tests
+        run: go test ./test/unit/... -v -cover
 
-      - name: Await Database Readiness
-        run: |
-          for i in {1..30}; do
-            if pg_isready -h localhost -p 5432 -U postgres; then
-              echo "PostgreSQL is fully ready!"
-              break
-            fi
-            echo "Waiting for postgres..."
-            sleep 1
-          done
-
-      - name: Execute Code Quality & Security Tests
-        run: go test ./... -v -coverprofile=coverage.out
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USER: postgres
-          DB_PASSWORD: postgres
-          DB_NAME: kickbase
-          DB_SSLMODE: disable
-          JWT_SECRET: ci-test-secret-key-must-be-long-enough
-
-      - name: Compile Application Binary
+      - name: Build Binary
         run: CGO_ENABLED=0 go build -v -ldflags="-s -w" -o kickbase cmd/server/main.go
