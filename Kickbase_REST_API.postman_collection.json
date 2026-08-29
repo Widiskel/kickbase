@@ -1,0 +1,477 @@
+{
+	"info": {
+		"_postman_id": "8b9e6e1a-9f4a-4c28-bfae-kickbase-2026",
+		"name": "Kickbase REST API",
+		"description": "Postman Collection untuk Football Team Management REST API (Go/Gin/PostgreSQL). Mendukung 100% endpoint CRUD Tim, Pemain, Jadwal Pertandingan, Pelaporan Hasil & Gol, Laporan Akumulasi Kemenangan, Soft Delete, Audit Trail Rollback, dan 9 Expressive Filter Operators.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin_user\",\n  \"password\": \"password123\",\n  \"name\": \"Administrator\",\n  \"role\": \"admin\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login (Get JWT Dual-Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.data && jsonData.data.access_token) {",
+									"    pm.environment.set(\"access_token\", jsonData.data.access_token);",
+									"    pm.environment.set(\"refresh_token\", jsonData.data.refresh_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Refresh Access Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/refresh",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "refresh"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Team Management",
+			"item": [
+				{
+					"name": "List Teams (Filter & Sort)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/teams?page=1&limit=10&name=CT:Per&sort_by=founded_year&order=asc",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "10" },
+								{ "key": "name", "value": "CT:Per" },
+								{ "key": "sort_by", "value": "founded_year" },
+								{ "key": "order", "value": "asc" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Team Detail",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/teams/{{team_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "{{team_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Create Team",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{access_token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Persipura Jayapura\",\n  \"logo_url\": \"https://example.com/persipura.png\",\n  \"founded_year\": 1963,\n  \"address\": \"Jl. Mandala No. 1\",\n  \"city\": \"Jayapura\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/teams",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams"]
+						}
+					}
+				},
+				{
+					"name": "Update Team (Optimistic Locking)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{access_token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Persipura Jayapura Updated\",\n  \"logo_url\": \"https://example.com/persipura.png\",\n  \"founded_year\": 1963,\n  \"address\": \"Jl. Mandala No. 1 Baru\",\n  \"city\": \"Jayapura\",\n  \"version\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/teams/{{team_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "{{team_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Team (Soft Delete)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{access_token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/api/teams/{{team_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "{{team_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Team History (Audit Trail)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/teams/{{team_id}}/history",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "{{team_id}}", "history"]
+						}
+					}
+				},
+				{
+					"name": "Revert Team to Previous Version",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{access_token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"version\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/teams/{{team_id}}/revert",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "{{team_id}}", "revert"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Player Management",
+			"item": [
+				{
+					"name": "List Players (Expressive Filter: IN, GT)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/players?page=1&limit=10&position=IN:CF,SS,AMF&height=GT:180&sort_by=jersey_number&order=asc",
+							"host": ["{{base_url}}"],
+							"path": ["api", "players"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "10" },
+								{ "key": "position", "value": "IN:CF,SS,AMF" },
+								{ "key": "height", "value": "GT:180" },
+								{ "key": "sort_by", "value": "jersey_number" },
+								{ "key": "order", "value": "asc" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Player (15 Positions Validation)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{access_token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"team_id\": \"{{team_id}}\",\n  \"name\": \"Bambang Pamungkas\",\n  \"height\": 178,\n  \"weight\": 72,\n  \"position\": \"CF\",\n  \"playstyle\": \"Goal Poacher\",\n  \"jersey_number\": 20\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/players",
+							"host": ["{{base_url}}"],
+							"path": ["api", "players"]
+						}
+					}
+				},
+				{
+					"name": "Update Player",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{access_token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"team_id\": \"{{team_id}}\",\n  \"name\": \"Bambang Pamungkas\",\n  \"height\": 178,\n  \"weight\": 73,\n  \"position\": \"CF\",\n  \"playstyle\": \"Goal Poacher\",\n  \"jersey_number\": 20,\n  \"version\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/players/{{player_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "players", "{{player_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Player (Soft Delete)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{access_token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/api/players/{{player_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "players", "{{player_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Match Scheduling & Results",
+			"item": [
+				{
+					"name": "List Matches (Date Filter: BT)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/matches?page=1&limit=10&status=EQ:scheduled&match_date=BT:2026-09-01,2026-09-30",
+							"host": ["{{base_url}}"],
+							"path": ["api", "matches"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "10" },
+								{ "key": "status", "value": "EQ:scheduled" },
+								{ "key": "match_date", "value": "BT:2026-09-01,2026-09-30" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Match Schedule",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{access_token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"match_date\": \"2026-09-15\",\n  \"match_time\": \"19:30:00\",\n  \"home_team_id\": \"{{home_team_id}}\",\n  \"away_team_id\": \"{{away_team_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/matches",
+							"host": ["{{base_url}}"],
+							"path": ["api", "matches"]
+						}
+					}
+				},
+				{
+					"name": "Update Match Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{access_token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"completed\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/matches/{{match_id}}/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "matches", "{{match_id}}", "status"]
+						}
+					}
+				},
+				{
+					"name": "Submit Match Result & Goals (Atomic Transaction)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{access_token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"match_id\": \"{{match_id}}\",\n  \"home_score\": 2,\n  \"away_score\": 1,\n  \"goals\": [\n    {\n      \"player_id\": \"{{scorer_id_1}}\",\n      \"minute\": 24\n    },\n    {\n      \"player_id\": \"{{scorer_id_2}}\",\n      \"minute\": 67\n    },\n    {\n      \"player_id\": \"{{scorer_id_3}}\",\n      \"minute\": 82\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/results",
+							"host": ["{{base_url}}"],
+							"path": ["api", "results"]
+						}
+					}
+				},
+				{
+					"name": "Get Match Result Detail",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/results/{{match_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "results", "{{match_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Match Reports & Head-to-Head",
+			"item": [
+				{
+					"name": "List Match Reports",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/reports/matches?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reports", "matches"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "10" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Match Report (Winner, Top Scorer, Accumulated Wins)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/reports/matches/{{match_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reports", "matches", "{{match_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Health & Metrics",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/health",
+							"host": ["{{base_url}}"],
+							"path": ["api", "health"]
+						}
+					}
+				},
+				{
+					"name": "Prometheus Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/metrics",
+							"host": ["{{base_url}}"],
+							"path": ["metrics"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "access_token",
+			"value": ""
+		},
+		{
+			"key": "refresh_token",
+			"value": ""
+		},
+		{
+			"key": "team_id",
+			"value": "00000000-0000-0000-0000-000000000001"
+		},
+		{
+			"key": "player_id",
+			"value": "00000000-0000-0000-0000-000000000001"
+		},
+		{
+			"key": "match_id",
+			"value": "00000000-0000-0000-0000-000000000001"
+		},
+		{
+			"key": "home_team_id",
+			"value": "00000000-0000-0000-0000-000000000001"
+		},
+		{
+			"key": "away_team_id",
+			"value": "00000000-0000-0000-0000-000000000002"
+		}
+	]
+}
