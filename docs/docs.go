@@ -1530,16 +1530,20 @@ const docTemplate = `{
             ],
             "properties": {
                 "away_team_id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "00000000-0000-0000-0000-000000000002"
                 },
                 "home_team_id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "00000000-0000-0000-0000-000000000001"
                 },
                 "match_date": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2026-09-15"
                 },
                 "match_time": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "19:30:00"
                 }
             }
         },
@@ -1555,37 +1559,46 @@ const docTemplate = `{
             ],
             "properties": {
                 "height": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 187
                 },
                 "jersey_number": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 9
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Marko Simic"
                 },
                 "playstyle": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Goal Poacher"
                 },
                 "position": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "CF"
                 },
                 "team_id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "00000000-0000-0000-0000-000000000001"
                 },
                 "weight": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 84
                 }
             }
         },
         "handler.CreateResultRequest": {
             "type": "object",
             "required": [
+                "goals",
                 "match_id"
             ],
             "properties": {
                 "away_score": {
                     "type": "integer",
-                    "minimum": 0
+                    "minimum": 0,
+                    "example": 1
                 },
                 "goals": {
                     "type": "array",
@@ -1595,10 +1608,12 @@ const docTemplate = `{
                 },
                 "home_score": {
                     "type": "integer",
-                    "minimum": 0
+                    "minimum": 0,
+                    "example": 2
                 },
                 "match_id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "00000000-0000-0000-0000-000000000001"
                 }
             }
         },
@@ -1612,20 +1627,25 @@ const docTemplate = `{
             ],
             "properties": {
                 "address": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Jl. Rasuna Said Kav. C-22"
                 },
                 "city": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Jakarta"
                 },
                 "founded_year": {
                     "type": "integer",
-                    "minimum": 1
+                    "minimum": 1,
+                    "example": 1928
                 },
                 "logo_url": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://upload.wikimedia.org/wikipedia/id/5/5e/Logo_Persija.png"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Persija Jakarta"
                 }
             }
         },
@@ -1660,10 +1680,12 @@ const docTemplate = `{
             ],
             "properties": {
                 "goal_time": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "24"
                 },
                 "player_id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "00000000-0000-0000-0000-000000000001"
                 }
             }
         },
@@ -1675,10 +1697,12 @@ const docTemplate = `{
             ],
             "properties": {
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "password123"
                 },
                 "username": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "admin"
                 }
             }
         },
@@ -1707,7 +1731,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "refresh_token": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
                 }
             }
         },
@@ -1716,23 +1741,31 @@ const docTemplate = `{
             "required": [
                 "name",
                 "password",
+                "role",
                 "username"
             ],
             "properties": {
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Admin Staff"
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 6
+                    "minLength": 6,
+                    "example": "password123"
                 },
                 "role": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "admin",
+                        "staff",
+                        "viewer"
+                    ],
+                    "example": "staff"
                 },
                 "username": {
                     "type": "string",
-                    "maxLength": 50,
-                    "minLength": 3
+                    "example": "admin_staff"
                 }
             }
         },
@@ -1743,7 +1776,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "target_version": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -1767,10 +1801,12 @@ const docTemplate = `{
             ],
             "properties": {
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "completed"
                 },
                 "version": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -1786,25 +1822,32 @@ const docTemplate = `{
             ],
             "properties": {
                 "height": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 187
                 },
                 "jersey_number": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 9
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Marko Simic"
                 },
                 "playstyle": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Goal Poacher"
                 },
                 "position": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "CF"
                 },
                 "version": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "weight": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 84
                 }
             }
         },
@@ -1815,22 +1858,28 @@ const docTemplate = `{
             ],
             "properties": {
                 "address": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Jl. Rasuna Said Kav. C-22 Baru"
                 },
                 "city": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Jakarta"
                 },
                 "founded_year": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1928
                 },
                 "logo_url": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://upload.wikimedia.org/wikipedia/id/5/5e/Logo_Persija.png"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Persija Jakarta Updated"
                 },
                 "version": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 }
             }
         }

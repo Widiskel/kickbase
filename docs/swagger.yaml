@@ -3,12 +3,16 @@ definitions:
   handler.CreateMatchRequest:
     properties:
       away_team_id:
+        example: 00000000-0000-0000-0000-000000000002
         type: string
       home_team_id:
+        example: 00000000-0000-0000-0000-000000000001
         type: string
       match_date:
+        example: "2026-09-15"
         type: string
       match_time:
+        example: "19:30:00"
         type: string
     required:
     - away_team_id
@@ -19,18 +23,25 @@ definitions:
   handler.CreatePlayerRequest:
     properties:
       height:
+        example: 187
         type: number
       jersey_number:
+        example: 9
         type: integer
       name:
+        example: Marko Simic
         type: string
       playstyle:
+        example: Goal Poacher
         type: string
       position:
+        example: CF
         type: string
       team_id:
+        example: 00000000-0000-0000-0000-000000000001
         type: string
       weight:
+        example: 84
         type: number
     required:
     - height
@@ -43,6 +54,7 @@ definitions:
   handler.CreateResultRequest:
     properties:
       away_score:
+        example: 1
         minimum: 0
         type: integer
       goals:
@@ -50,25 +62,33 @@ definitions:
           $ref: '#/definitions/handler.GoalInput'
         type: array
       home_score:
+        example: 2
         minimum: 0
         type: integer
       match_id:
+        example: 00000000-0000-0000-0000-000000000001
         type: string
     required:
+    - goals
     - match_id
     type: object
   handler.CreateTeamRequest:
     properties:
       address:
+        example: Jl. Rasuna Said Kav. C-22
         type: string
       city:
+        example: Jakarta
         type: string
       founded_year:
+        example: 1928
         minimum: 1
         type: integer
       logo_url:
+        example: https://upload.wikimedia.org/wikipedia/id/5/5e/Logo_Persija.png
         type: string
       name:
+        example: Persija Jakarta
         type: string
     required:
     - address
@@ -94,8 +114,10 @@ definitions:
   handler.GoalInput:
     properties:
       goal_time:
+        example: "24"
         type: string
       player_id:
+        example: 00000000-0000-0000-0000-000000000001
         type: string
     required:
     - goal_time
@@ -104,8 +126,10 @@ definitions:
   handler.LoginRequest:
     properties:
       password:
+        example: password123
         type: string
       username:
+        example: admin
         type: string
     required:
     - password
@@ -126,6 +150,7 @@ definitions:
   handler.RefreshTokenRequest:
     properties:
       refresh_token:
+        example: d290f1ee-6c54-4b01-90e6-d701748f0851
         type: string
     required:
     - refresh_token
@@ -133,24 +158,32 @@ definitions:
   handler.RegisterRequest:
     properties:
       name:
+        example: Admin Staff
         type: string
       password:
+        example: password123
         minLength: 6
         type: string
       role:
+        enum:
+        - admin
+        - staff
+        - viewer
+        example: staff
         type: string
       username:
-        maxLength: 50
-        minLength: 3
+        example: admin_staff
         type: string
     required:
     - name
     - password
+    - role
     - username
     type: object
   handler.RevertRequest:
     properties:
       target_version:
+        example: 1
         type: integer
     required:
     - target_version
@@ -166,8 +199,10 @@ definitions:
   handler.UpdateMatchStatusRequest:
     properties:
       status:
+        example: completed
         type: string
       version:
+        example: 1
         type: integer
     required:
     - status
@@ -176,18 +211,25 @@ definitions:
   handler.UpdatePlayerRequest:
     properties:
       height:
+        example: 187
         type: number
       jersey_number:
+        example: 9
         type: integer
       name:
+        example: Marko Simic
         type: string
       playstyle:
+        example: Goal Poacher
         type: string
       position:
+        example: CF
         type: string
       version:
+        example: 1
         type: integer
       weight:
+        example: 84
         type: number
     required:
     - height
@@ -200,16 +242,22 @@ definitions:
   handler.UpdateTeamRequest:
     properties:
       address:
+        example: Jl. Rasuna Said Kav. C-22 Baru
         type: string
       city:
+        example: Jakarta
         type: string
       founded_year:
+        example: 1928
         type: integer
       logo_url:
+        example: https://upload.wikimedia.org/wikipedia/id/5/5e/Logo_Persija.png
         type: string
       name:
+        example: Persija Jakarta Updated
         type: string
       version:
+        example: 1
         type: integer
     required:
     - version

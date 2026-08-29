@@ -25,6 +25,11 @@ jobs:
           go-version: '1.22'
           cache: true
 
+      - name: Generate OpenAPI & Swagger Docs
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@v1.16.3
+          swag init -g cmd/server/main.go -o docs
+
       - name: Run Unit Tests
         run: go test ./test/unit/... -v -cover
 
