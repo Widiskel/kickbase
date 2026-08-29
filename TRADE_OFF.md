@@ -1,6 +1,6 @@
-# Trade Off & Assumptions
+# Trade Off & Architectural Decisions
 
-Dokumen ini mencatat semua asumsi, keputusan desain, dan hal-hal yang **tidak disebutkan secara eksplisit** dalam dokumen ujian teknis (Soal 1).
+Dokumen ini mencatat semua asumsi, keputusan desain, dan trade-off arsitektur teknis yang diimplementasikan pada **Kickbase REST API**.
 
 ---
 
@@ -24,7 +24,7 @@ Dokumen ini mencatat semua asumsi, keputusan desain, dan hal-hal yang **tidak di
 
 ## Posisi Pemain (Modern Tactical 15 Positions)
 
-Mengikuti sistem posisi sepak bola modern. Dokumen ujian hanya menyebut 4 posisi umum (penyerang, gelandang, bertahan, penjaga gawang), namun implementasi menyediakan 15 posisi spesifik taktis:
+Mengikuti sistem posisi sepak bola modern dengan 15 posisi spesifik taktis:
 
 ### Forwards (Penyerang)
 
@@ -76,18 +76,18 @@ Playstyle menentukan gaya dan peran taktis pemain di lapangan. Setiap playstyle 
 
 | # | Asumsi | Alasan |
 |---|--------|--------|
-| 12 | Autentikasi menggunakan JWT Dual-Token (Access Token 1 Jam + Refresh Token Rotation 7 Hari di DB) | Memenuhi standar keamanan API modern dan requirement security assessment |
+| 12 | Autentikasi menggunakan JWT Dual-Token (Access Token 1 Jam + Refresh Token Rotation 7 Hari di DB) | Memenuhi standar keamanan API modern dan perlindungan terhadap token replay attack |
 | 13 | Otorisasi berbasis Granular RBAC Permissions (`<domain>:<action>` dengan 24 permissions) | Memungkinkan pemisahan hak akses fleksibel antar role (`admin`, `staff`, `viewer`) |
 | 14 | Endpoint pembacaan (GET teams, players, matches, reports) dapat diakses publik | Memudahkan integrasi dengan aplikasi mobile Android tanpa mewajibkan login untuk membaca data |
 | 15 | Seluruh endpoint list mendukung Pagination (`page`, `limit`), Dynamic Filtering, dan Sorting (`sort_by`, `order`) | Mencegah bottleneck performa dan memudahkan query data spesifik |
 | 16 | Database menggunakan PostgreSQL 16 dengan GORM | Relational data dengan constraint integritas ketat (FK, Unique Index, Cascading) cocok untuk RDBMS |
 | 17 | Soft delete + Audit Trail via `_history` tables bertipe JSONB indexed (Delta Changes) | Hanya menyimpan perubahan delta (old vs new) untuk menghemat storage hingga ~70% sekaligus mendukung fitur rollback/revert snapshot versi |
 | 18 | Observabilitas terstandarisasi dengan Zerolog JSON logging, Prometheus `/metrics`, Grafana, dan Loki log aggregator | Memudahkan monitoring latensi, request rate, metrik bisnis, dan pencarian log error real-time |
-| 19 | Containerization multi-container via Docker/Podman Compose | Memastikan environment seragam bagi evaluator dalam satu perintah `docker compose up` |
+| 19 | Containerization multi-container via Docker/Podman Compose | Memastikan environment runtime terstandarisasi dan dapat dijalankan dalam satu perintah `docker compose up` |
 | 20 | Optimistic Locking via integer `version` pada setiap entitas | Mencegah *lost update* akibat race condition konkuren tanpa overhead blocking lock RDBMS (`SELECT FOR UPDATE`) |
 | 21 | Transaksi database atomik (`db.Transaction`) pada pelaporan hasil pertandingan | Menjamin konsistensi data skor, status match, entri gol, dan history tanpa risiko *partial write* |
 | 22 | Strict Column Whitelisting untuk dynamic sorting (`sort_by`) | Menutup celah SQL Injection pada query ordering tanpa membatasi fleksibilitas sorting klien |
-| 23 | Zero-Configuration Anonymous Access pada Grafana Dashboard | Memberikan pengalaman evaluasi instan (*frictionless*) tanpa mewajibkan evaluator mengetik kredensial login |
+| 23 | Zero-Configuration Anonymous Access pada Grafana Dashboard | Memberikan pengalaman monitoring instan (*frictionless*) tanpa mewajibkan pengguna mengetik kredensial login |
 
 ---
 
@@ -107,11 +107,11 @@ Playstyle menentukan gaya dan peran taktis pemain di lapangan. Setiap playstyle 
 
 ---
 
-## Out of Scope (Tidak Masuk Scope Ujian)
+## Out of Scope (Batasan Sistem Saat Ini)
 
 | Item | Alasan |
 |------|--------|
-| Custom Web Frontend / Mobile App | Dokumen ujian fokus pada evaluasi Backend REST API JSON |
-| Push notification ke device | Tidak ada requirement notifikasi real-time |
-| Multi-tenant (multi perusahaan) | Hanya melayani entitas tim amatir Perusahaan XYZ |
-| Sistem transfer bursa pemain | Di luar cakupan Soal 1 |
+| Custom Web Frontend / Mobile App | Fokus utama pada keandalan dan arsitektur Backend REST API JSON |
+| Push notification ke device | Arsitektur saat ini menggunakan polling / webhook |
+| Multi-tenant (multi perusahaan) | Dirancang khusus untuk pengelolaan tim internal binaan |
+| Sistem transfer bursa pemain | Manajemen tim berfokus pada pendaftaran roster dan kompetisi |

@@ -85,7 +85,7 @@ docker compose up --build -d
 
 ## 🛠️ Quick Start — Native Local Development (Non-Container)
 
-Jika reviewer ingin menjalankan backend secara langsung di mesin lokal tanpa Docker/Podman:
+Jika ingin menjalankan backend secara langsung di mesin lokal tanpa Docker/Podman:
 
 ```bash
 # 1. Clone repository
